@@ -13,6 +13,7 @@
     using Prism.Mvvm;
     using TestResources.Properties;
     using TravelShortPathFinder.Algorithm.Logic;
+    using TravelShortPathFinder.TestResources;
     using Point = System.Drawing.Point;
 
     public class MainWindowViewModel : BindableBase
@@ -22,7 +23,6 @@
         private BitmapImage _bitmapImage;
         private Node[,] _mapSegmentMatrix;
         private NavGrid _navGrid;
-        private List<Node> _sectors;
         private Bitmap _curBitmap;
 
         public MainWindowViewModel()
@@ -44,23 +44,35 @@
 
         private string _imageSessionFolder;
         private int _imageSessionNum;
+        private Graph _graph;
 
         private void Explore()
         {
+            var navCase = InputNavCases.Case1;
+            var settings = new Settings();
+            settings.SegmentationSquareSize = 40;
+
             _imageSessionFolder = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
             Directory.CreateDirectory(_imageSessionFolder);
 
             Application.Current.Dispatcher.Invoke(
-                () => { BitmapImage = ConvertBitmapToBitmapImage(Resources.InputNav_01); });
-            Thread.Sleep(10000);
-            var segmentationStart = new Point(66, 20);
-            _navGrid = NavGridProvider.FromBitmap(Resources.InputNav_01);
-            var segmentator = new NavGridSegmentator(_navGrid, 60);
+                () => { BitmapImage = ConvertBitmapToBitmapImage(navCase.Bitmap); });
+
+            Thread.Sleep(1000);
+
+            _navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
+      
+            var segmentator = new NavGridSegmentator(_navGrid, settings);
             _mapSegmentMatrix = new Node[_navGrid.Width, _navGrid.Height];
 
             segmentator.MapUpdated += SegmentatorOnMapUpdated;
-            _sectors = new List<Node>();
-            var segments = segmentator.Process(segmentationStart, _sectors, _mapSegmentMatrix);
+            _graph = new Graph();
+            segmentator.Process(navCase.StartPoint, _graph, _mapSegmentMatrix);
+
+            var optimizer = new NavGridOptimizer(settings.SegmentationMinSegmentSize);
+            optimizer.OptimizeGraph(_graph, _navGrid);
+            Thread.Sleep(2000);
+            SegmentatorOnMapUpdated();
         }
 
         private unsafe void SegmentatorOnMapUpdated()
@@ -137,7 +149,7 @@
 
             using var g = Graphics.FromImage(bitmap);
 
-            foreach (var node in _sectors)
+            foreach (var node in _graph.Nodes)
             {
                 foreach (var link in node.Links)
                 {

@@ -14,7 +14,6 @@
         private Graph _graph;
 
         private NavGridSegmentator _segmentator;
-        private int _graphNodesCount;
         private int _passedNodesCount;
         private Vector2 _playerCachedPos;
         private readonly NavGrid _navGrid;
@@ -32,7 +31,7 @@
 
         public Vector2? NextRunPoint => CurrentRunNode?.GridPos;
         public bool HasLocation => CurrentRunNode != null;
-        public float PercentComplete => (float)_passedNodesCount / _graphNodesCount * 100;
+        public float PercentComplete => (float)_passedNodesCount / _graph.Nodes.Count * 100;
 
         public void Update(Vector2 playerPos)
         {
@@ -69,7 +68,7 @@
                 x => { x.Unwalkable = false; });
         }
 
-        public bool ProcessSegmentation(Vector2 playerPos)
+        public void ProcessSegmentation(Vector2 playerPos)
         {
             _passedNodesCount = 0;
             IsAreaSegmentated = false;
@@ -78,40 +77,19 @@
             _playerCachedPos = playerPos;
             CurrentRunNode = null;
 
-            _segmentator = new NavGridSegmentator(_navGrid, _settings.SegmentationRange);
-            var sectors = new List<Node>();
-            var nodes = _segmentator.Process(new Point((int)playerPos.X, (int)playerPos.Y), sectors, _mapSegmentMatrix);
-            _graph = new Graph(nodes);
+            _segmentator = new NavGridSegmentator(_navGrid, _settings);
+            _graph = new Graph();
+            _segmentator.Process(new Point((int)playerPos.X, (int)playerPos.Y), _graph, _mapSegmentMatrix);
+       
             var optimizer = new NavGridOptimizer(_settings.SegmentationMinSegmentSize);
             optimizer.OptimizeGraph(_graph, _navGrid);
-
-            _graphNodesCount = nodes.Count;
+            
             IsAreaSegmentated = true;
-
-            return _graphNodesCount > 0;
         }
 
         public void UpdateForTriggerableBlockage(Vector2 gridPos)
         {
-            var sectors = new List<Node>();
-            var newNodes = _segmentator.Process(new Point((int)gridPos.X, (int)gridPos.Y), sectors, _mapSegmentMatrix);
-
-            if (newNodes.Count == 0)
-            {
-                //LogError($"Can't segmentate area under triggerable blockage at pos: {gridPos}");
-                return;
-            }
-
-            if (newNodes.Count > 1)
-            {
-                //LogWarning($"Expecting one segment after segmentation triggerable blockage but got: {processedSegments.Count}");
-            }
-
-            _graph.Nodes.AddRange(newNodes);
-
-            //LogMessage($"Successfully updated segmentation for triggerable blockage for {processedSegments.Count} segments");
-
-            _graphNodesCount = _graph.Nodes.Count;
+            _segmentator.Process(new Point((int)gridPos.X, (int)gridPos.Y), _graph, _mapSegmentMatrix);
         }
 
         private void NextRunNodeFromSeenNodes(IReadOnlyCollection<Node> seenNodes, Vector2 playerPos)

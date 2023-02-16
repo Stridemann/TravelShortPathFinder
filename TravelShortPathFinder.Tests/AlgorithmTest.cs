@@ -5,6 +5,7 @@ namespace TravelShortPathFinder.Tests
     using Algorithm.Data;
     using Algorithm.Logic;
     using Shouldly;
+    using TestResources;
     using TestResources.Properties;
 
     public class AlgorithmTest
@@ -71,18 +72,16 @@ namespace TravelShortPathFinder.Tests
         [Fact]
         public void MainTest()
         {
-            var segmentationStart = new Point(66, 20);
-            var navGrid = NavGridProvider.FromBitmap(Resources.InputNav_01);
-            var segmentator = new NavGridSegmentator(navGrid, 80);
+            var navCase = InputNavCases.Case1;
+            var navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
+            var segmentator = new NavGridSegmentator(navGrid, new Settings());
             var mapSegmentMatrix = new Node[navGrid.Width, navGrid.Height];
-            var sectors = new List<Node>();
-            var segments = segmentator.Process(segmentationStart, sectors, mapSegmentMatrix);
-            //DumpBitmap(navGrid, mapSegmentMatrix, segments, "DumpBitmap_NoOpt.png");
+            var graph = new Graph();
+            segmentator.Process(navCase.StartPoint, graph, mapSegmentMatrix);
             var optimizer = new NavGridOptimizer(300);
-            var graph = new Graph(segments);
+
             optimizer.OptimizeGraph(graph, navGrid);
-            DumpBitmap(navGrid, mapSegmentMatrix, segments, "DumpBitmap_Opt.png");
-            //SegmentationMinSegmentSize = 300
+            DumpBitmap(navGrid, mapSegmentMatrix, graph.Nodes, "DumpBitmap_Opt.png");
         }
 
         [Fact]

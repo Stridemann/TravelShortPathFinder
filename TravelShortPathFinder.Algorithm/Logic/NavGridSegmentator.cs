@@ -6,16 +6,18 @@
     public class NavGridSegmentator
     {
         private readonly NavGrid _navGrid;
-        private readonly int _halfSpreadRange;
+        private readonly int _segmentSquareSize;
+        private readonly Settings _settings;
         public event Action MapUpdated = delegate { };
 
-        public NavGridSegmentator(NavGrid navGrid, int spreadRange)
+        public NavGridSegmentator(NavGrid navGrid, Settings settings)
         {
+            _settings = settings;
             _navGrid = navGrid;
-            _halfSpreadRange = spreadRange / 2;
+            _segmentSquareSize = settings.SegmentationSquareSize / 2;
         }
 
-        public List<Node> Process(Point startPoint, List<Node> sectors, Node?[,] mapSegmentMatrix)
+        public void Process(Point startPoint, Graph graph, Node?[,] mapSegmentMatrix)
         {
             if (startPoint.X < 0 || startPoint.Y < 0)
             {
@@ -31,7 +33,6 @@
                     + $"ArrayHeight: {_navGrid.Height}");
             }
 
-      
             var possibleSectors = new List<Point> { startPoint };
             Node currentNode;
 
@@ -55,7 +56,8 @@
                         + $"Height: {_navGrid.Height}. "
                         + $"IndexX: {currentNode.Pos.X}, "
                         + $"IndexY: {currentNode.Pos.Y}, "
-                        + $"Sectors: {possibleSectors.Count}", e);
+                        + $"Sectors: {possibleSectors.Count}",
+                        e);
                 }
 
                 while (currentNode.Stack.Count > 0)
@@ -74,14 +76,12 @@
 
                     currentNode.PossibleLinks.Clear(); //just clear it to free some memory
                     currentNode.UpdateBoundingCenter();
-                    sectors.Add(currentNode);
+                    graph.Nodes.Add(currentNode);
                 }
 
                 var orderedSectors = currentNode.PossibleSectors.OrderBy(x => PointDist(currentNode.Pos, x));
                 possibleSectors.AddRange(orderedSectors);
             }
-
-            return sectors;
         }
 
         private static double PointDist(Point p1, Point p2)
@@ -135,7 +135,7 @@
             var absX = Math.Abs(node.Pos.X - point.X);
             var absY = Math.Abs(node.Pos.Y - point.Y);
 
-            if (absX > _halfSpreadRange || absY > _halfSpreadRange)
+            if (absX > _segmentSquareSize || absY > _segmentSquareSize)
             {
                 return;
             }
@@ -145,7 +145,7 @@
                 mapSegmentMatrix[point.X, point.Y] = node;
             }
 
-            if (absX == _halfSpreadRange || absY == _halfSpreadRange)
+            if (absX == _segmentSquareSize || absY == _segmentSquareSize)
             {
                 _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.PossibleSectorMarkedPassed;
                 MapUpdated();
@@ -183,10 +183,15 @@
 
             _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Passed;
             MapUpdated();
-            node.Stack.Push(point with { X = point.X + 1 });
-            node.Stack.Push(point with { X = point.X - 1 });
-            node.Stack.Push(point with { Y = point.Y + 1 });
-            node.Stack.Push(point with { Y = point.Y - 1 });
+
+            if (!_settings.FastSegmentationThroughOnePoint)
+            {
+                node.Stack.Push(point with { X = point.X + 1 });
+                node.Stack.Push(point with { X = point.X - 1 });
+                node.Stack.Push(point with { Y = point.Y + 1 });
+                node.Stack.Push(point with { Y = point.Y - 1 });
+            }
+
             node.Stack.Push(new Point(point.X + 1, point.Y + 1));
             node.Stack.Push(new Point(point.X + 1, point.Y - 1));
             node.Stack.Push(new Point(point.X - 1, point.Y + 1));

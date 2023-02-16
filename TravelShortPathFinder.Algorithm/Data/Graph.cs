@@ -4,11 +4,6 @@
 
     public class Graph
     {
-        public readonly List<Node> Nodes;
-
-        public Graph(List<Node> nodes)
-        {
-            Nodes = nodes;
-        }
+        public readonly List<Node> Nodes = new List<Node>();
     }
 }
