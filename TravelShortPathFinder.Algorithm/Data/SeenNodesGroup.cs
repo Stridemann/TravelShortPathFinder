@@ -1,6 +1,4 @@
-﻿using TravelShortPathFinder.Algorithm.Logic;
-
-namespace TravelShortPathFinder.Algorithm.Data
+﻿namespace TravelShortPathFinder.Algorithm.Data
 {
     using System.Numerics;
 

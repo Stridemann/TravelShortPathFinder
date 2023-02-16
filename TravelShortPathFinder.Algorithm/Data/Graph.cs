@@ -4,6 +4,14 @@
 
     public class Graph
     {
-        public readonly List<Node> Nodes = new List<Node>();
+        public Graph(NavGrid navGrid)
+        {
+            NavGrid = navGrid;
+            MapSegmentMatrix = new Node[navGrid.Width, navGrid.Height];
+        }
+
+        public Node?[,] MapSegmentMatrix { get; }
+        public List<Node> Nodes { get; } = new List<Node>();
+        public NavGrid NavGrid { get; }
     }
 }

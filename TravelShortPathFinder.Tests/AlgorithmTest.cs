@@ -10,19 +10,15 @@ namespace TravelShortPathFinder.Tests
 
     public class AlgorithmTest
     {
-        private void DumpBitmap(
-            NavGrid navGrid,
-            Node[,] matrix,
-            List<Node> segments,
-            string fileName)
+        private void DumpBitmap(Graph graph, string fileName)
         {
-            var bitmap = new Bitmap(navGrid.Width, navGrid.Height);
+            var bitmap = new Bitmap(graph.NavGrid.Width, graph.NavGrid.Height);
 
-            for (var x = 0; x < navGrid.Width; x++)
+            for (var x = 0; x < graph.NavGrid.Width; x++)
             {
-                for (var y = 0; y < navGrid.Height; y++)
+                for (var y = 0; y < graph.NavGrid.Height; y++)
                 {
-                    var gridVal = navGrid.WalkArray[x, y];
+                    var gridVal = graph.NavGrid.WalkArray[x, y];
 
                     if ((gridVal & WalkableFlag.Nonwalkable) != 0)
                     {
@@ -42,7 +38,7 @@ namespace TravelShortPathFinder.Tests
                     }
                     else
                     {
-                        var node = matrix[x, y];
+                        var node = graph.MapSegmentMatrix[x, y];
                         var seed = node.Id;
                         var rand = new Random(seed);
                         var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
@@ -53,7 +49,7 @@ namespace TravelShortPathFinder.Tests
 
             using var g = Graphics.FromImage(bitmap);
 
-            foreach (var node in segments)
+            foreach (var node in graph.Nodes)
             {
                 foreach (var link in node.Links)
                 {
@@ -75,13 +71,12 @@ namespace TravelShortPathFinder.Tests
             var navCase = InputNavCases.Case1;
             var navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
             var segmentator = new NavGridSegmentator(navGrid, new Settings());
-            var mapSegmentMatrix = new Node[navGrid.Width, navGrid.Height];
-            var graph = new Graph();
-            segmentator.Process(navCase.StartPoint, graph, mapSegmentMatrix);
+            var graph = new Graph(navGrid);
+            segmentator.Process(navCase.StartPoint, graph);
             var optimizer = new NavGridOptimizer(300);
 
             optimizer.OptimizeGraph(graph, navGrid);
-            DumpBitmap(navGrid, mapSegmentMatrix, graph.Nodes, "DumpBitmap_Opt.png");
+            DumpBitmap(graph, "DumpBitmap_Opt.png");
         }
 
         [Fact]

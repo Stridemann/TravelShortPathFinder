@@ -1,9 +1,8 @@
-﻿namespace TravelShortPathFinder.Algorithm.Logic
+﻿namespace TravelShortPathFinder.Algorithm.Data
 {
     using System.Diagnostics;
     using System.Drawing;
     using System.Numerics;
-    using Data;
 
     [DebuggerDisplay("Node Id:{Id}, IsVisited: {IsVisited}, Links: {Links.Count}")]
     public class Node

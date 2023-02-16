@@ -1,7 +1,6 @@
 ﻿namespace TravelShortPathFinder.Gui.ViewModels
 {
     using System;
-    using System.Collections.Generic;
     using System.Drawing;
     using System.Drawing.Imaging;
     using System.IO;
@@ -10,20 +9,21 @@
     using System.Windows;
     using System.Windows.Media.Imaging;
     using Algorithm.Data;
+    using Algorithm.Logic;
     using Prism.Mvvm;
-    using TestResources.Properties;
-    using TravelShortPathFinder.Algorithm.Logic;
-    using TravelShortPathFinder.TestResources;
-    using Point = System.Drawing.Point;
+    using TestResources;
 
     public class MainWindowViewModel : BindableBase
     {
         private string _title = "Prism Application";
 
         private BitmapImage _bitmapImage;
-        private Node[,] _mapSegmentMatrix;
         private NavGrid _navGrid;
         private Bitmap _curBitmap;
+
+        private string _imageSessionFolder;
+        private int _imageSessionNum;
+        private Graph _graph;
 
         public MainWindowViewModel()
         {
@@ -42,10 +42,6 @@
             set => SetProperty(ref _bitmapImage, value);
         }
 
-        private string _imageSessionFolder;
-        private int _imageSessionNum;
-        private Graph _graph;
-
         private void Explore()
         {
             var navCase = InputNavCases.Case1;
@@ -61,13 +57,12 @@
             Thread.Sleep(1000);
 
             _navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
-      
+            _graph = new Graph(_navGrid);
+
             var segmentator = new NavGridSegmentator(_navGrid, settings);
-            _mapSegmentMatrix = new Node[_navGrid.Width, _navGrid.Height];
 
             segmentator.MapUpdated += SegmentatorOnMapUpdated;
-            _graph = new Graph();
-            segmentator.Process(navCase.StartPoint, _graph, _mapSegmentMatrix);
+            segmentator.Process(navCase.StartPoint, _graph);
 
             var optimizer = new NavGridOptimizer(settings.SegmentationMinSegmentSize);
             optimizer.OptimizeGraph(_graph, _navGrid);
@@ -85,7 +80,7 @@
             }
 
             var data = bitmap.LockBits(new Rectangle(0, 0, _navGrid.Width, _navGrid.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            int* pData = (int*)data.Scan0;
+            var pData = (int*)data.Scan0;
             var blackArgb = Color.Black.ToArgb();
             var redArgb = Color.Red.ToArgb();
             var greenArgb = Color.Green.ToArgb();
@@ -97,50 +92,47 @@
                 _navGrid.Width * _navGrid.Height,
                 (i, state) =>
                 {
-                    unsafe
+                    var y = i / _navGrid.Width;
+                    var x = i % _navGrid.Width;
+
+                    var gridVal = _navGrid.WalkArray[x, y];
+
+                    if ((gridVal & WalkableFlag.Nonwalkable) != 0)
                     {
-                        var y = i / _navGrid.Width;
-                        var x = i % _navGrid.Width;
+                        pData![y * _navGrid.Width + x] = blackArgb;
+                        //bitmap.SetPixel(x, y, Color.Black);
+                    }
+                    else if (gridVal == WalkableFlag.PossibleSectorMarkedPassed)
+                    {
+                        pData![y * _navGrid.Width + x] = redArgb;
+                        //bitmap.SetPixel(x, y, Color.Red);
+                    }
+                    else if (gridVal == WalkableFlag.SectorCenter)
+                    {
+                        pData![y * _navGrid.Width + x] = greenArgb;
+                        //bitmap.SetPixel(x, y, Color.Green);
+                    }
+                    else if (gridVal == WalkableFlag.Walkable)
+                    {
+                        pData![y * _navGrid.Width + x] = lightGrayArgb;
+                        //bitmap.SetPixel(x, y, Color.LightGray);
+                    }
+                    else
+                    {
+                        var node = _graph.MapSegmentMatrix[x, y];
 
-                        var gridVal = _navGrid.WalkArray[x, y];
-
-                        if ((gridVal & WalkableFlag.Nonwalkable) != 0)
+                        if (node != null)
                         {
-                            pData[y * _navGrid.Width + x] = blackArgb;
-                            //bitmap.SetPixel(x, y, Color.Black);
-                        }
-                        else if (gridVal == WalkableFlag.PossibleSectorMarkedPassed)
-                        {
-                            pData[y * _navGrid.Width + x] = redArgb;
-                            //bitmap.SetPixel(x, y, Color.Red);
-                        }
-                        else if (gridVal == WalkableFlag.SectorCenter)
-                        {
-                            pData[y * _navGrid.Width + x] = greenArgb;
-                            //bitmap.SetPixel(x, y, Color.Green);
-                        }
-                        else if (gridVal == WalkableFlag.Walkable)
-                        {
-                            pData[y * _navGrid.Width + x] = lightGrayArgb;
-                            //bitmap.SetPixel(x, y, Color.LightGray);
+                            var seed = node.Id;
+                            var rand = new Random(seed);
+                            var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+                            //bitmap.SetPixel(x, y, randomColor);
+                            pData![y * _navGrid.Width + x] = randomColor.ToArgb();
                         }
                         else
                         {
-                            var node = _mapSegmentMatrix[x, y];
-
-                            if (node != null)
-                            {
-                                var seed = node.Id;
-                                var rand = new Random(seed);
-                                var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
-                                //bitmap.SetPixel(x, y, randomColor);
-                                pData[y * _navGrid.Width + x] = randomColor.ToArgb();
-                            }
-                            else
-                            {
-                                pData[y * _navGrid.Width + x] = orangeRedArgb;
-                                //bitmap.SetPixel(x, y, Color.OrangeRed);
-                            }
+                            pData![y * _navGrid.Width + x] = orangeRedArgb;
+                            //bitmap.SetPixel(x, y, Color.OrangeRed);
                         }
                     }
                 });

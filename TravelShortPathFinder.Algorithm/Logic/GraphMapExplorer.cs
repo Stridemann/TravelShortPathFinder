@@ -11,19 +11,17 @@
 
         private readonly Settings _settings;
         private readonly List<SeenNodesGroup> _groupsList = new List<SeenNodesGroup>();
-        private Graph _graph;
-
+        private readonly Graph _graph;
+        private readonly NavGrid _navGrid;
         private NavGridSegmentator _segmentator;
         private int _passedNodesCount;
         private Vector2 _playerCachedPos;
-        private readonly NavGrid _navGrid;
-        private readonly Node[,] _mapSegmentMatrix;
 
         public GraphMapExplorer(Settings settings, NavGrid navGrid)
         {
             _settings = settings;
             _navGrid = navGrid;
-            _mapSegmentMatrix = new Node[navGrid.Width, navGrid.Height];
+            _graph = new Graph(_navGrid);
         }
 
         public Node? CurrentRunNode { get; private set; }
@@ -64,8 +62,7 @@
 
         public void ResetUnwalkable()
         {
-            _graph.Nodes.ForEach(
-                x => { x.Unwalkable = false; });
+            _graph.Nodes.ForEach(x => x.Unwalkable = false);
         }
 
         public void ProcessSegmentation(Vector2 playerPos)
@@ -78,18 +75,17 @@
             CurrentRunNode = null;
 
             _segmentator = new NavGridSegmentator(_navGrid, _settings);
-            _graph = new Graph();
-            _segmentator.Process(new Point((int)playerPos.X, (int)playerPos.Y), _graph, _mapSegmentMatrix);
-       
+            _segmentator.Process(new Point((int)playerPos.X, (int)playerPos.Y), _graph);
+
             var optimizer = new NavGridOptimizer(_settings.SegmentationMinSegmentSize);
             optimizer.OptimizeGraph(_graph, _navGrid);
-            
+
             IsAreaSegmentated = true;
         }
 
         public void UpdateForTriggerableBlockage(Vector2 gridPos)
         {
-            _segmentator.Process(new Point((int)gridPos.X, (int)gridPos.Y), _graph, _mapSegmentMatrix);
+            _segmentator.Process(new Point((int)gridPos.X, (int)gridPos.Y), _graph);
         }
 
         private void NextRunNodeFromSeenNodes(IReadOnlyCollection<Node> seenNodes, Vector2 playerPos)

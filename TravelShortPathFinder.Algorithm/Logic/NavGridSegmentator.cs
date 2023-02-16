@@ -17,7 +17,7 @@
             _segmentSquareSize = settings.SegmentationSquareSize / 2;
         }
 
-        public void Process(Point startPoint, Graph graph, Node?[,] mapSegmentMatrix)
+        public void Process(Point startPoint, Graph graph)
         {
             if (startPoint.X < 0 || startPoint.Y < 0)
             {
@@ -62,7 +62,7 @@
 
                 while (currentNode.Stack.Count > 0)
                 {
-                    DoSpread(currentNode, currentNode.Stack.Pop(), mapSegmentMatrix);
+                    DoSpread(currentNode, currentNode.Stack.Pop(), graph.MapSegmentMatrix);
                 }
 
                 if (currentNode.Square > 1)

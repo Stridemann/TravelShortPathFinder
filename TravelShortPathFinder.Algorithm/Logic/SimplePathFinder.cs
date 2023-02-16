@@ -1,4 +1,6 @@
-﻿namespace TravelShortPathFinder.Algorithm.Logic
+﻿using TravelShortPathFinder.Algorithm.Data;
+
+namespace TravelShortPathFinder.Algorithm.Logic
 {
     public static class SimplePathFinder
     {

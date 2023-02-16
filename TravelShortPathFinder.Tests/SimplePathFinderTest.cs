@@ -4,6 +4,7 @@ namespace TravelShortPathFinder.Tests
 {
     using System.Drawing;
     using Shouldly;
+    using TravelShortPathFinder.Algorithm.Data;
 
     public class SimplePathFinderTest
     {
