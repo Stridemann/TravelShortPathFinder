@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Prism.Unity" Version="8.1.97" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TravelShortPathFinder.Algorithm\TravelShortPathFinder.Algorithm.csproj" />
+    <ProjectReference Include="..\TravelShortPathFinder.Resources\TravelShortPathFinder.TestResources.csproj" />
+  </ItemGroup>
+</Project>
