@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:prism="http://prismlibrary.com/"
         prism:ViewModelLocator.AutoWireViewModel="True"
-        Title="{Binding Title}" Height="350" Width="525" >
+        Title="{Binding Title}" Height="1000" Width="1000" WindowStartupLocation="CenterScreen">
     <Grid>
-        <Image HorizontalAlignment="Left" VerticalAlignment="Top" Source="{Binding BitmapImage}" Stretch="None"/>
+        <Image HorizontalAlignment="Left" VerticalAlignment="Top" Source="{Binding BitmapImage}" Stretch="UniformToFill"/>
     </Grid>
 </Window>

@@ -4,9 +4,13 @@ namespace TravelShortPathFinder.Algorithm.Logic
 {
     public static class SimplePathFinder
     {
-        public static List<Node> FindPath(Node from, Node to)
+        public static List<Node>? FindPath(Node from, Node to)
         {
             var result = new List<Node>();
+
+            if (from == to)
+                return result;
+
             var nodesMap = new Dictionary<Node, Node>(); //save the back path map
             var queue = new Queue<Node>();
 
@@ -33,7 +37,7 @@ namespace TravelShortPathFinder.Algorithm.Logic
                             prevNode = nodesMap[prevNode];
                         }
 
-                        result.Insert(0, from);
+                        //result.Insert(0, from);
 
                         return result;
                     }
@@ -42,7 +46,7 @@ namespace TravelShortPathFinder.Algorithm.Logic
                 }
             }
 
-            return result;
+            return null;
         }
     }
 }

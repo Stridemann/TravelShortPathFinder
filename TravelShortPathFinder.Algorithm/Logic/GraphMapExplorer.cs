@@ -10,24 +10,22 @@
         private const float UPDATE_DIST = 25;
 
         private readonly Settings _settings;
-        private readonly List<SeenNodesGroup> _groupsList = new List<SeenNodesGroup>();
+        public List<SeenNodesGroup> GroupsList { get; } = new List<SeenNodesGroup>();
         private readonly Graph _graph;
         private readonly NavGrid _navGrid;
         private NavGridSegmentator _segmentator;
         private int _passedNodesCount;
         private Vector2 _playerCachedPos;
 
-        public GraphMapExplorer(Settings settings, NavGrid navGrid)
+        public GraphMapExplorer(Settings settings, Graph graph)
         {
             _settings = settings;
-            _navGrid = navGrid;
-            _graph = new Graph(_navGrid);
+            _navGrid = graph.NavGrid;
+            _graph = graph;
         }
 
         public Node? CurrentRunNode { get; private set; }
-        public bool IsAreaSegmentated { get; private set; }
-
-        public Vector2? NextRunPoint => CurrentRunNode?.GridPos;
+        public Node NextRunNode => CurrentRunNode;
         public bool HasLocation => CurrentRunNode != null;
         public float PercentComplete => (float)_passedNodesCount / _graph.Nodes.Count * 100;
 
@@ -35,7 +33,7 @@
         {
             if (!(Vector2.Distance(_playerCachedPos, playerPos) > UPDATE_DIST)
                 && CurrentRunNode is { IsVisited: false, Unwalkable: false }
-                && !(Vector2.Distance(CurrentRunNode.GridPos, playerPos) < _settings.ExploreNodeProcessDist / 2))
+                && !(Vector2.Distance(CurrentRunNode.GridPos, playerPos) < _settings.ExploreNodeProcessRadius / 2))
             {
                 return;
             }
@@ -47,8 +45,7 @@
             {
                 if (node.IsVisited
                     || node.Unwalkable
-                    || //not 100% sure
-                    Vector2.Distance(playerPos, node.GridPos) > _settings.ExploreNodeProcessDist)
+                    || Vector2.Distance(playerPos, node.GridPos) > _settings.ExploreNodeProcessRadius)
                 {
                     continue;
                 }
@@ -68,24 +65,65 @@
         public void ProcessSegmentation(Vector2 playerPos)
         {
             _passedNodesCount = 0;
-            IsAreaSegmentated = false;
 
-            _groupsList.Clear();
+            GroupsList.Clear();
             _playerCachedPos = playerPos;
             CurrentRunNode = null;
 
             _segmentator = new NavGridSegmentator(_navGrid, _settings);
-            _segmentator.Process(new Point((int)playerPos.X, (int)playerPos.Y), _graph);
-
-            var optimizer = new NavGridOptimizer(_settings.SegmentationMinSegmentSize);
-            optimizer.OptimizeGraph(_graph, _navGrid);
-
-            IsAreaSegmentated = true;
+            StartSegmentation(new Point((int)playerPos.X, (int)playerPos.Y));
         }
 
-        public void UpdateForTriggerableBlockage(Vector2 gridPos)
+        public void UpdateForTriggerableBlockage(Point gridCell)
         {
-            _segmentator.Process(new Point((int)gridPos.X, (int)gridPos.Y), _graph);
+            StartSegmentation(gridCell);
+        }
+
+        private void StartSegmentation(Point segmentationStartPoint)
+        {
+            _segmentator.Process(segmentationStartPoint, _graph);
+            NavGridOptimizer.OptimizeGraph(_graph, _settings.SegmentationMinSegmentSize);
+
+            if (_graph.Nodes.Count == 0)
+            {
+                return;
+            }
+
+            Node endNode = null;
+
+            //Find the farthest node from start position
+            Bfs.Process(
+                _graph.Nodes[0],
+                procNode =>
+                {
+                    if (procNode is { Unwalkable: false })
+                    {
+                        endNode = procNode;
+
+                        return true;
+                    }
+
+                    return false;
+                });
+
+            //Calculate and set a priority distance from end node to all another.
+            //We will try to run most farthest nodes from end
+            endNode.PriorityFromEndDistance = 1;
+
+            Bfs.Process(
+                endNode,
+                procNode =>
+                {
+                    foreach (var node in procNode.Links)
+                    {
+                        if (node.PriorityFromEndDistance == 0)
+                        {
+                            node.PriorityFromEndDistance = procNode.PriorityFromEndDistance + 1;
+                        }
+                    }
+
+                    return true;
+                });
         }
 
         private void NextRunNodeFromSeenNodes(IReadOnlyCollection<Node> seenNodes, Vector2 playerPos)
@@ -111,12 +149,12 @@
                     //lost connection with a group - making a new group for it
                     if (node.Group == null || (node.Group.IsGroupProcessed && !node.GraphExplorerProcessed))
                     {
-                        var newGroup = new SeenNodesGroup();
+                        var newGroup = new SeenNodesGroup(SeenNodesGroup.DfsIteration);
 
                         //var avrgPos = Vector2.Zero;
                         var lastNode = node;
 
-                        Dfs.Process(
+                        Bfs.Process(
                             node,
                             procNode =>
                             {
@@ -141,7 +179,7 @@
                         newGroup.AveragePos = lastNode.GridPos; // avrgPos / newGroup.NodesCount;
                         node.SetGraphExplorerProcessed();
                         node.Group = newGroup;
-                        _groupsList.Add(newGroup);
+                        GroupsList.Add(newGroup);
                     }
                     else if (!node.Group.IsGroupProcessed)
                     {
@@ -151,7 +189,7 @@
                         group.Nodes.Clear();
 
                         // var avrgPos = Vector2.Zero;
-                        Dfs.Process(
+                        Bfs.Process(
                             node,
                             procNode =>
                             {
@@ -171,7 +209,7 @@
                         if (group.NodesCount == 0)
                         {
                             //LogError($"Removing group {group.GroupId}. Nodes: {group.NodesCount}. Before: {nodesBefore}");
-                            _groupsList.Remove(group);
+                            GroupsList.Remove(group);
                         }
                         else
                         {
@@ -184,30 +222,31 @@
                 }
             }
 
-            if (_groupsList.Count > 0)
+            if (GroupsList.Count > 0)
             {
                 if (seenNodes.Count > 0 || CurrentRunNode == null || CurrentRunNode.IsVisited || CurrentRunNode.Unwalkable) //stuck fix
                 {
-                    foreach (var seenNodesGroup in _groupsList.ToList())
+                    foreach (var seenNodesGroup in GroupsList.ToList())
                     {
                         seenNodesGroup.Nodes = seenNodesGroup.Nodes.Where(x => !x.IsVisited).ToList();
 
                         if (seenNodesGroup.NodesCount == 0)
                         {
-                            _groupsList.Remove(seenNodesGroup);
+                            GroupsList.Remove(seenNodesGroup);
                         }
                     }
 
-                    if (_groupsList.Count > 0)
+                    if (GroupsList.Count > 0)
                     {
-                        CurrentRunNode = _groupsList.Where(x => x.Nodes.Any(y => !y.Unwalkable))
-                                                    .OrderBy(x => x.Nodes.Count(y => !y.Unwalkable))
-                                                    .ThenBy(x => Vector2.Distance(playerPos, x.AveragePos))
-                                                    .First()
-                                                    .Nodes.Where(x => !x.Unwalkable)
-                                                    .OrderBy(x => (int)Vector2.Distance(playerPos, x.GridPos) / 150)
-                                                    .ThenByDescending(x => Vector2.Distance(x.Group.AveragePos, x.GridPos))
-                                                    .FirstOrDefault();
+                        CurrentRunNode = GroupsList.Where(x => x.Nodes.Any(y => !y.Unwalkable))
+                                                   .OrderBy(x => x.Nodes.Count(y => !y.Unwalkable))
+                                                   .ThenBy(x => Vector2.Distance(playerPos, x.AveragePos))
+                                                   .First()
+                                                   .Nodes.Where(x => !x.Unwalkable)
+                                                   //.OrderBy(x => (int)Vector2.Distance(playerPos, x.GridPos) / 150)
+                                                   .OrderByDescending(x => x.PriorityFromEndDistance / 10)
+                                                   .ThenBy(x => Vector2.Distance(playerPos, x.GridPos))
+                                                   .FirstOrDefault();
                     }
                 }
             }

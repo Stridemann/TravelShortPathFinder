@@ -73,9 +73,7 @@ namespace TravelShortPathFinder.Tests
             var segmentator = new NavGridSegmentator(navGrid, new Settings());
             var graph = new Graph(navGrid);
             segmentator.Process(navCase.StartPoint, graph);
-            var optimizer = new NavGridOptimizer(300);
-
-            optimizer.OptimizeGraph(graph, navGrid);
+            NavGridOptimizer.OptimizeGraph(graph, 300);
             DumpBitmap(graph, "DumpBitmap_Opt.png");
         }
 

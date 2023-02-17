@@ -17,17 +17,19 @@
         public static int UniqIdCounter;
         public Point Min = new Point(int.MaxValue, int.MaxValue);
         public Point Max = new Point(int.MinValue, int.MinValue);
+        public int PriorityFromEndDistance;
         public int Square;
 
         public Node(int id, Point pos)
         {
             Id = id;
             Pos = pos;
+            GridPos = new Vector2(pos.X, pos.Y);
         }
 
         public IReadOnlyList<Node> Links => _links;
-
         public Point BoundingCenter { get; private set; }
+        public bool IsRemovedByOptimizer { get; set; }
 
         public void UpdateBoundingCenter()
         {
@@ -67,13 +69,11 @@
 
         #region Node
 
-        public bool Unwalkable { get; set; }
         public SeenNodesGroup? Group;
-        public Vector2 GridPos; //TODO: Check who set
-
+        public readonly Vector2 GridPos;
+        public bool Unwalkable { get; set; }
         public bool IsVisited { get; set; }
-
-        public uint GraphExplorerIteration = uint.MaxValue;
+        public int GraphExplorerIteration = -1;
         public bool GraphExplorerProcessed => GraphExplorerIteration == SeenNodesGroup.DfsIteration;
 
         public void SetGraphExplorerProcessed()
@@ -82,5 +82,22 @@
         }
 
         #endregion
+
+        public bool IsLinkedTo(Node node)
+        {
+            if (Links.Contains(node))
+                return true;
+
+            foreach (var link in Links)
+            {
+                if (link == node)
+                    return true;
+
+                if (link.Links.Contains(node))
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

@@ -2,44 +2,42 @@
 
 namespace TravelShortPathFinder.Algorithm.Logic
 {
-    public class NavGridOptimizer
+    public static class NavGridOptimizer
     {
-        private readonly int _minSectorSqr;
-
-        public NavGridOptimizer(int minSectorSqr)
-        {
-            _minSectorSqr = minSectorSqr;
-        }
-
-        public void OptimizeGraph(Graph graph, NavGrid grid)
+        public static void OptimizeGraph(Graph graph, int minSectorSqr)
         {
             for (var sectorIndex = 0; sectorIndex < graph.Nodes.Count; sectorIndex++)
             {
-                var node = graph.Nodes[sectorIndex];
+                var deletingNode = graph.Nodes[sectorIndex];
 
-                if (node.Square < _minSectorSqr)
+                if (deletingNode.Square < minSectorSqr)
                 {
-                    grid.WalkArray[node.Pos.X, node.Pos.Y] = WalkableFlag.FailedCenter;
+                    deletingNode.IsRemovedByOptimizer = true;
+                    graph.NavGrid.WalkArray[deletingNode.Pos.X, deletingNode.Pos.Y] = WalkableFlag.FailedCenter;
 
                     //Here from all around nodes we delete all links to node we gonna delete
-                    for (var i = 0; i < node.Links.Count; i++)
+                    for (var i = 0; i < deletingNode.Links.Count; i++)
                     {
-                        var deletingNodeLinkedNode = node.Links[i];
+                        var deletingNodeLinkedNode = deletingNode.Links[i];
 
-                        if (deletingNodeLinkedNode.RemoveAllLinksToNode(node) == 0)
+                        if (deletingNodeLinkedNode.RemoveAllLinksToNode(deletingNode) == 0)
                         {
-                            throw new InvalidOperationException($"Link to deleting sector {node.Id} was not present in {deletingNodeLinkedNode.Id}");
+                            throw new InvalidOperationException(
+                                $"Link to deleting sector {deletingNode.Id} was not present in {deletingNodeLinkedNode.Id}");
                         }
 
                         //Also we link together all around nodes, since our node was linking all around nodes together
-                        for (var j = i + 1; j < node.Links.Count; j++)
+                        for (var j = i + 1; j < deletingNode.Links.Count; j++)
                         {
-                            var nextLinkedNode = node.Links[j];
+                            var nextLinkedNode = deletingNode.Links[j];
 
                             if (deletingNodeLinkedNode == nextLinkedNode)
                                 continue;
 
-                            deletingNodeLinkedNode.LinkWith(nextLinkedNode);
+                            if (!deletingNodeLinkedNode.IsLinkedTo(nextLinkedNode))
+                            {
+                                deletingNodeLinkedNode.LinkWith(nextLinkedNode);
+                            }
                         }
                     }
 

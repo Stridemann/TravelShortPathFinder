@@ -1,11 +1,8 @@
 ﻿namespace TravelShortPathFinder.Algorithm.Utils
 {
-    using System;
-    using System.Collections.Generic;
-    using Logic;
-    using TravelShortPathFinder.Algorithm.Data;
+    using Data;
 
-    public static class Dfs
+    public static class Bfs
     {
         public static void Process(Node startNode, Func<Node, bool> actionDelegate)
         {
@@ -20,7 +17,10 @@
                 foreach (var item in node.Links)
                 {
                     if (item.IsProcessed)
+                    {
                         continue;
+                    }
+
                     item.SetProcessed();
 
                     if (actionDelegate(item))
