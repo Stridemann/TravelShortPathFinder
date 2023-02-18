@@ -153,15 +153,15 @@
 
                     var gridVal = _navGrid.WalkArray[x, y];
 
-                    if ((gridVal & WalkableFlag.Nonwalkable) != 0)
+                    if ((gridVal & WalkableFlag.NonWalkable) != 0)
                     {
                         pData![y * _navGrid.Width + x] = blackArgb;
                     }
-                    else if (gridVal == WalkableFlag.PossibleSectorMarkedPassed)
+                    else if (gridVal == WalkableFlag.PossibleSegmentStart)
                     {
                         pData![y * _navGrid.Width + x] = redArgb;
                     }
-                    else if (gridVal == WalkableFlag.SectorCenter)
+                    else if (gridVal == WalkableFlag.PossibleSegmentPassed)
                     {
                         pData![y * _navGrid.Width + x] = greenArgb;
                     }

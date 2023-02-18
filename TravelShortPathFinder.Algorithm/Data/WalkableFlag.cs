@@ -6,15 +6,13 @@
     [Flags]
     public enum WalkableFlag : byte
     {
-        Nonwalkable = 1,
+        NonWalkable = 1,
         Walkable = 2,
         Passed = 4,
-        PossibleSectorMarkedPassed = Walkable | Passed | 8,
-        PossibleSector = Walkable | 16,
-        SectorCenter = PossibleSector | Passed,
-        FailedCenter = Walkable | Passed | 32,
-        LockedObstacle = 64,
-        UnlockedObstacle = 128
+        PossibleSegmentStart = Walkable | Passed | 8,
+        PossibleSegment = Walkable | 16,
+        PossibleSegmentPassed = PossibleSegment | Passed,
+        FailedCenter = Walkable | Passed | 32
     }
 
     public static class WalkableFlagExtension

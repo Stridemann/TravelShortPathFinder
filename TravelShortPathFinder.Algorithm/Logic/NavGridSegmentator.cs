@@ -46,7 +46,7 @@
 
                 try
                 {
-                    _navGrid.WalkArray[currentNode.Pos.X, currentNode.Pos.Y] = WalkableFlag.PossibleSector;
+                    _navGrid.WalkArray[currentNode.Pos.X, currentNode.Pos.Y] = WalkableFlag.PossibleSegment;
                 }
                 catch (Exception e)
                 {
@@ -67,7 +67,7 @@
 
                 if (currentNode.Square > 1)
                 {
-                    _navGrid.WalkArray[currentNode.Pos.X, currentNode.Pos.Y] = WalkableFlag.SectorCenter;
+                    _navGrid.WalkArray[currentNode.Pos.X, currentNode.Pos.Y] = WalkableFlag.PossibleSegmentPassed;
 
                     foreach (var possibleLink in currentNode.PossibleLinks)
                     {
@@ -79,7 +79,7 @@
                     graph.Nodes.Add(currentNode);
                 }
 
-                var orderedSectors = currentNode.PossibleSectors.OrderBy(x => PointDist(currentNode.Pos, x));
+                var orderedSectors = currentNode.PossibleSegments.OrderBy(x => PointDist(currentNode.Pos, x));
                 possibleSectors.AddRange(orderedSectors);
             }
         }
@@ -103,7 +103,7 @@
 
             var value = _navGrid.WalkArray[point.X, point.Y];
 
-            if (value.Contain(WalkableFlag.Nonwalkable))
+            if (value.Contain(WalkableFlag.NonWalkable))
             {
                 _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Passed;
                 MapUpdated();
@@ -113,7 +113,7 @@
 
             if (value.Contain(WalkableFlag.Passed))
             {
-                if (value.Contain(WalkableFlag.PossibleSectorMarkedPassed))
+                if (value.Contain(WalkableFlag.PossibleSegmentStart))
                 {
                     var linkedSection = mapSegmentMatrix[point.X, point.Y];
 
@@ -147,9 +147,9 @@
 
             if (absX == _segmentSquareSize || absY == _segmentSquareSize)
             {
-                _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.PossibleSectorMarkedPassed;
+                _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.PossibleSegmentStart;
                 MapUpdated();
-                node.PossibleSectors.Push(point);
+                node.PossibleSegments.Push(point);
 
                 node.Stack.Push(new Point(point.X + 1, point.Y + 1));
                 node.Stack.Push(new Point(point.X + 1, point.Y - 1));

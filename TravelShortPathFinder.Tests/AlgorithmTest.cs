@@ -20,7 +20,7 @@ namespace TravelShortPathFinder.Tests
                 {
                     var gridVal = graph.NavGrid.WalkArray[x, y];
 
-                    if ((gridVal & WalkableFlag.Nonwalkable) != 0)
+                    if ((gridVal & WalkableFlag.NonWalkable) != 0)
                     {
                         bitmap.SetPixel(x, y, Color.Black);
                     }
@@ -28,7 +28,7 @@ namespace TravelShortPathFinder.Tests
                     {
                         bitmap.SetPixel(x, y, Color.Red);
                     }
-                    else if (gridVal == WalkableFlag.SectorCenter)
+                    else if (gridVal == WalkableFlag.PossibleSegmentPassed)
                     {
                         bitmap.SetPixel(x, y, Color.Green);
                     }

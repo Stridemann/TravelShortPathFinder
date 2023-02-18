@@ -9,7 +9,7 @@
     {
         public readonly Stack<Point> Stack = new Stack<Point>();
         public readonly Point Pos;
-        public readonly Stack<Point> PossibleSectors = new Stack<Point>();
+        public readonly Stack<Point> PossibleSegments = new Stack<Point>();
         public readonly List<Node> PossibleLinks = new List<Node>();
         public readonly int Id;
 
