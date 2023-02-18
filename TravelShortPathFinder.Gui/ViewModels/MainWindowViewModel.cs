@@ -56,7 +56,7 @@
 
         private void Explore()
         {
-            var navCase = InputNavCases.Case5;
+            var navCase = InputNavCases.Case4;
 
             _settings = new Settings
             {
@@ -70,7 +70,7 @@
 
             Application.Current.Dispatcher.Invoke(
                 () => { BitmapImage = ConvertBitmapToBitmapImage(navCase.Bitmap); });
-            Thread.Sleep(1000);
+            //Thread.Sleep(1000);
             _navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
             _graph = new Graph(_navGrid);
 
@@ -139,10 +139,14 @@
             var orangeRedArgb = Color.OrangeRed.ToArgb();
             var darkGrayArgb = Color.DimGray.ToArgb();
 
+            //Note:
+            //pData![y * _navGrid.Width + x] = blackArgb;
+            //is the same as:
+            //bitmap.SetPixel(x, y, Color.Black);
             Parallel.For(
                 0,
                 _navGrid.Width * _navGrid.Height,
-                (i, state) =>
+                i =>
                 {
                     var y = i / _navGrid.Width;
                     var x = i % _navGrid.Width;
@@ -152,22 +156,18 @@
                     if ((gridVal & WalkableFlag.Nonwalkable) != 0)
                     {
                         pData![y * _navGrid.Width + x] = blackArgb;
-                        //bitmap.SetPixel(x, y, Color.Black);
                     }
                     else if (gridVal == WalkableFlag.PossibleSectorMarkedPassed)
                     {
                         pData![y * _navGrid.Width + x] = redArgb;
-                        //bitmap.SetPixel(x, y, Color.Red);
                     }
                     else if (gridVal == WalkableFlag.SectorCenter)
                     {
                         pData![y * _navGrid.Width + x] = greenArgb;
-                        //bitmap.SetPixel(x, y, Color.Green);
                     }
                     else if (gridVal == WalkableFlag.Walkable)
                     {
                         pData![y * _navGrid.Width + x] = lightGrayArgb;
-                        //bitmap.SetPixel(x, y, Color.LightGray);
                     }
                     else
                     {
@@ -208,7 +208,7 @@
             bitmap.UnlockBits(data);
 
             using var g = Graphics.FromImage(bitmap);
-            var font = new Font("Arial", 12, FontStyle.Regular);
+            //var font = new Font("Arial", 12, FontStyle.Regular);
 
             foreach (var node in _graph.Nodes)
             {
@@ -300,7 +300,7 @@
             bitmapImage.StreamSource = memory;
             bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
             bitmapImage.EndInit();
-            bitmapImage.Freeze(); // optional if you want to use the BitmapImage in a different thread
+            bitmapImage.Freeze();
 
             return bitmapImage;
         }

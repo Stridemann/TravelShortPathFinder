@@ -2,6 +2,7 @@
 {
     using System.Drawing;
     using System.Numerics;
+    using BenchmarkDotNet.Attributes;
     using Data;
     using Utils;
 
@@ -28,7 +29,7 @@
         public Node NextRunNode => CurrentRunNode;
         public bool HasLocation => CurrentRunNode != null;
         public float PercentComplete => (float)_passedNodesCount / _graph.Nodes.Count * 100;
-
+        
         public void Update(Vector2 playerPos)
         {
             if (!(Vector2.Distance(_playerCachedPos, playerPos) > UPDATE_DIST)
@@ -91,9 +92,12 @@
 
             Node endNode = null;
 
+            //Start node from segmentationStartPoint pos is always first.
+            var startPoint = _graph.Nodes[0];
+
             //Find the farthest node from start position
-            Bfs.Process(
-                _graph.Nodes[0],
+            BreadthFirstSearch.Process(
+                startPoint,
                 procNode =>
                 {
                     if (procNode is { Unwalkable: false })
@@ -106,11 +110,11 @@
                     return false;
                 });
 
-            //Calculate and set a priority distance from end node to all another.
-            //We will try to run most farthest nodes from end
-            endNode.PriorityFromEndDistance = 1;
+            endNode!.PriorityFromEndDistance = 1;
 
-            Bfs.Process(
+            //Calculate and set a priority distance from end node to all another.
+            //We will try to run most farthest nodes from end. That's the code idea of algo
+            BreadthFirstSearch.Process(
                 endNode,
                 procNode =>
                 {
@@ -154,7 +158,7 @@
                         //var avrgPos = Vector2.Zero;
                         var lastNode = node;
 
-                        Bfs.Process(
+                        BreadthFirstSearch.Process(
                             node,
                             procNode =>
                             {
@@ -176,7 +180,9 @@
                                 return false;
                             });
 
-                        newGroup.AveragePos = lastNode.GridPos; // avrgPos / newGroup.NodesCount;
+                        //as alternative can be:
+                        //newGroup.AveragePos = avrgPos / newGroup.NodesCount;
+                        newGroup.AveragePos = lastNode.GridPos;
                         node.SetGraphExplorerProcessed();
                         node.Group = newGroup;
                         GroupsList.Add(newGroup);
@@ -189,7 +195,7 @@
                         group.Nodes.Clear();
 
                         // var avrgPos = Vector2.Zero;
-                        Bfs.Process(
+                        BreadthFirstSearch.Process(
                             node,
                             procNode =>
                             {
@@ -216,6 +222,7 @@
                             node.SetGraphExplorerProcessed();
                             group.SetGraphExplorerProcessed();
 
+                            //Optionally AveragePos can be updated here:
                             //group.AveragePos = avrgPos / group.NodesCount;
                         }
                     }
@@ -224,29 +231,32 @@
 
             if (GroupsList.Count > 0)
             {
-                if (seenNodes.Count > 0 || CurrentRunNode == null || CurrentRunNode.IsVisited || CurrentRunNode.Unwalkable) //stuck fix
+                if (seenNodes.Count > 0 || CurrentRunNode == null || CurrentRunNode.IsVisited || CurrentRunNode.Unwalkable)
                 {
-                    foreach (var seenNodesGroup in GroupsList.ToList())
+                    for (var i = 0; i < GroupsList.Count; i++)
                     {
-                        seenNodesGroup.Nodes = seenNodesGroup.Nodes.Where(x => !x.IsVisited).ToList();
+                        var seenNodesGroup = GroupsList[i];
+                        seenNodesGroup.Nodes.RemoveAll(x => x.IsVisited);
 
                         if (seenNodesGroup.NodesCount == 0)
                         {
-                            GroupsList.Remove(seenNodesGroup);
+                            GroupsList.RemoveAt(i);
+                            i--;
                         }
                     }
 
                     if (GroupsList.Count > 0)
                     {
-                        CurrentRunNode = GroupsList.Where(x => x.Nodes.Any(y => !y.Unwalkable))
-                                                   .OrderBy(x => x.Nodes.Count(y => !y.Unwalkable))
-                                                   .ThenBy(x => Vector2.Distance(playerPos, x.AveragePos))
-                                                   .First()
-                                                   .Nodes.Where(x => !x.Unwalkable)
-                                                   //.OrderBy(x => (int)Vector2.Distance(playerPos, x.GridPos) / 150)
-                                                   .OrderByDescending(x => x.PriorityFromEndDistance / 10)
-                                                   .ThenBy(x => Vector2.Distance(playerPos, x.GridPos))
-                                                   .FirstOrDefault();
+                        var bestGroup = GroupsList.Where(x => x.Nodes.Any(y => !y.Unwalkable))
+                                                  .OrderBy(x => x.Nodes.Count(y => !y.Unwalkable))
+                                                  .ThenBy(x => Vector2.Distance(playerPos, x.AveragePos))
+                                                  .First();
+
+                        CurrentRunNode = bestGroup
+                                         .Nodes.Where(x => !x.Unwalkable)
+                                         .OrderByDescending(x => x.PriorityFromEndDistance / _settings.LocalSelectNearNodeRange)
+                                         .ThenBy(x => Vector2.Distance(playerPos, x.GridPos))
+                                         .FirstOrDefault();
                     }
                 }
             }

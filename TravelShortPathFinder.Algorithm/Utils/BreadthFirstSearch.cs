@@ -2,8 +2,10 @@
 {
     using Data;
 
-    public static class Bfs
+    public static class BreadthFirstSearch
     {
+        // The regular https://en.wikipedia.org/wiki/Breadth-first_search
+        // actionDelegate called on each node and controls should we add process it (and it's child) further
         public static void Process(Node startNode, Func<Node, bool> actionDelegate)
         {
             var queue = new Queue<Node>();
