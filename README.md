@@ -13,3 +13,5 @@ The algorithm does not have a strict, sequential path output. It is adaptive and
 The core algorithm does not provide the shortest path directly, but it does provide the point to which the player should move. As the player moves, the algorithm will mark the graph nodes as "Passed" within the player's view radius, which will trigger the algorithm to provide a new point to move towards.
 
 If you need the shortest sequential path as a result, then a simulation is required. You can use the AlgorithmUtils.GetShortestPath() function to obtain the full path.
+
+![IExe096wrd](https://user-images.githubusercontent.com/7633163/219903741-3ef56bf5-c547-4c0c-af90-a3e8dd03b501.gif)
