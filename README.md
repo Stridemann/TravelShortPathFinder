@@ -14,4 +14,5 @@ The core algorithm does not provide the shortest path directly, but it does prov
 
 If you need the shortest sequential path as a result, then a simulation is required. You can use the AlgorithmUtils.GetShortestPath() function to obtain the full path.
 
-![IExe096wrd](https://user-images.githubusercontent.com/7633163/219903741-3ef56bf5-c547-4c0c-af90-a3e8dd03b501.gif)
+
+![FullAlgoDemo](https://user-images.githubusercontent.com/7633163/219960587-623a6fa2-785b-4e80-8dfc-acdc7daff222.gif)
