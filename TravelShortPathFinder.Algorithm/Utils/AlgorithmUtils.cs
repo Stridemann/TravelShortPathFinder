@@ -2,17 +2,29 @@
 {
     using System.Numerics;
     using Data;
+    using Interfaces;
     using Logic;
 
     public static class AlgorithmUtils
     {
-        public static List<Node> GetShortestPath(NavGrid navGrid, Vector2 startPoint, Settings settings)
+        public static List<Node> GetShortestPath(
+            NavGrid navGrid,
+            Vector2 startPoint,
+            Settings settings,
+            INextNodeSelector? nodeSelector = null)
         {
             var graph = new Graph(navGrid);
-            var explorer = new GraphMapExplorer(settings, graph);
+            nodeSelector ??= new DefaultNextNodeSelector(settings);
+            var explorer = new GraphMapExplorer(settings, graph, nodeSelector);
             explorer.ProcessSegmentation(startPoint);
-            var curPlayerNode = graph.Nodes.First();
             var result = new List<Node>();
+
+            if (graph.Nodes.Count == 0)
+            {
+                return result;
+            }
+
+            var curPlayerNode = graph.Nodes.First();
 
             do
             {

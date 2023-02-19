@@ -8,7 +8,8 @@
         private readonly NavGrid _navGrid;
         private readonly int _segmentSquareSize;
         private readonly Settings _settings;
-        public event Action MapUpdated = delegate { };
+        public event Action MapUpdated = delegate { };//For debug only
+        public event Action MapSegmentAdded = delegate { };//For debug only
 
         public NavGridSegmentator(NavGrid navGrid, Settings settings)
         {
@@ -77,6 +78,7 @@
                     currentNode.PossibleLinks.Clear(); //just clear it to free some memory
                     currentNode.UpdateBoundingCenter();
                     graph.Nodes.Add(currentNode);
+                    MapSegmentAdded();
                 }
 
                 var orderedSectors = currentNode.PossibleSegments.OrderBy(x => PointDist(currentNode.Pos, x));

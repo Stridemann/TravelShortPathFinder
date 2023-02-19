@@ -56,14 +56,14 @@
             {
                 SegmentationSquareSize = 40,
                 SegmentationMinSegmentSize = 200,
-                ExploreNodeProcessRadius = 50
+                PlayerVisibilityRadius = 50
             };
             //InputNavCase = new Tuple<InputNavCase, int>(InputNavCases.Case5, 643);
             var navCase = InputNavCase.Item1;
             var _navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
             var _graph = new Graph(_navGrid);
 
-            _explorer = new GraphMapExplorer(_settings, _graph);
+            _explorer = new GraphMapExplorer(_settings, _graph, new DefaultNextNodeSelector(_settings));
             //var _playerPos = new Vector2(navCase.StartPoint.X, navCase.StartPoint.Y);
             //_explorer.ProcessSegmentation(_playerPos);
             //_curPlayerNode = _graph.Nodes.First();

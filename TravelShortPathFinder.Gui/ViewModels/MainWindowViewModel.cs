@@ -56,38 +56,45 @@
 
         private void Explore()
         {
-            var navCase = InputNavCases.Case4;
-
-            _settings = new Settings
-            {
-                SegmentationSquareSize = 40,
-                SegmentationMinSegmentSize = 200,
-                ExploreNodeProcessRadius = 50
-            };
+            var navCase = InputNavCases.Case5;
+            _settings = navCase.Settings;
 
             _imageSessionFolder = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
             Directory.CreateDirectory(_imageSessionFolder);
 
             Application.Current.Dispatcher.Invoke(
                 () => { BitmapImage = ConvertBitmapToBitmapImage(navCase.Bitmap); });
-            //Thread.Sleep(1000);
+            Thread.Sleep(1000);
             _navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
             _graph = new Graph(_navGrid);
+            _explorer = new GraphMapExplorer(_settings, _graph, new DefaultNextNodeSelector(_settings));
 
-            _explorer = new GraphMapExplorer(_settings, _graph);
+            //_explorer.MapPriorityUpdated += () =>
+            //{
+            //    RepaintBitmap(null, null, true);
+            //    Thread.Sleep(0);
+            //};
+
+            //_explorer.Segmentator.MapSegmentAdded += () =>
+            //{
+            //    RepaintBitmap(null, null, true);
+            //    Thread.Sleep(20);
+            //};
+
             _playerPos = new Vector2(navCase.StartPoint.X, navCase.StartPoint.Y);
             _explorer.ProcessSegmentation(_playerPos);
+            
             var curPlayerNode = _graph.Nodes.First();
 
             _explorer.Update(_playerPos);
             RepaintBitmap(null, null, true);
 
-            Thread.Sleep(2000);
+            //Thread.Sleep(2000);
 
             if (!_explorer.HasLocation)
                 return;
 
-            const int DELAY = 0;
+            const int DELAY = 250;
 
             do
             {
@@ -106,7 +113,7 @@
                 {
                     //For some reason cannot find path there
                     //Shouldn't happen
-                    _explorer.NextRunNode.Unwalkable = true; 
+                    _explorer.NextRunNode.Unwalkable = true;
                 }
                 else if (path.Count == 0)
                 {
@@ -138,6 +145,7 @@
             var lightGrayArgb = Color.DimGray.ToArgb();
             var orangeRedArgb = Color.OrangeRed.ToArgb();
             var darkGrayArgb = Color.DimGray.ToArgb();
+            var font = new Font("Arial", 20, FontStyle.Regular);
 
             //Note:
             //pData![y * _navGrid.Width + x] = blackArgb;
@@ -193,14 +201,12 @@
                                     seed = node.Group?.Id ?? node.Id;
                                 var rand = new Random(seed);
                                 var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
-                                //bitmap.SetPixel(x, y, randomColor);
                                 pData![y * _navGrid.Width + x] = randomColor.ToArgb();
                             }
                         }
                         else
                         {
                             pData![y * _navGrid.Width + x] = orangeRedArgb;
-                            //bitmap.SetPixel(x, y, Color.OrangeRed);
                         }
                     }
                 });
@@ -208,8 +214,7 @@
             bitmap.UnlockBits(data);
 
             using var g = Graphics.FromImage(bitmap);
-            //var font = new Font("Arial", 12, FontStyle.Regular);
-
+     
             foreach (var node in _graph.Nodes)
             {
                 const int CIRCLE_SIZE = 10;
@@ -229,8 +234,6 @@
                     CIRCLE_SIZE,
                     CIRCLE_SIZE);
 
-                //g.DrawString(node.PriorityFromEndDistance.ToString(), font, Brushes.White, new PointF(node.GridPos.X, node.GridPos.Y));
-
                 foreach (var link in node.Links)
                 {
                     g.DrawLine(
@@ -240,6 +243,9 @@
                         link.GridPos.X,
                         link.GridPos.Y);
                 }
+
+                //if (node.PriorityFromEndDistance != 0)
+                //    g.DrawString(node.PriorityFromEndDistance.ToString(), font, Brushes.White, new PointF(node.GridPos.X, node.GridPos.Y));
             }
 
             if (navPath != null)
@@ -266,20 +272,19 @@
             {
                 g.DrawEllipse(
                     Pens.White,
-                    playerNode.GridPos.X - _settings.ExploreNodeProcessRadius,
-                    playerNode.GridPos.Y - _settings.ExploreNodeProcessRadius,
-                    _settings.ExploreNodeProcessRadius * 2,
-                    _settings.ExploreNodeProcessRadius * 2);
+                    playerNode.GridPos.X - _settings.PlayerVisibilityRadius,
+                    playerNode.GridPos.Y - _settings.PlayerVisibilityRadius,
+                    _settings.PlayerVisibilityRadius * 2,
+                    _settings.PlayerVisibilityRadius * 2);
 
                 g.DrawEllipse(
                     Pens.White,
-                    playerNode.GridPos.X - _settings.ExploreNodeProcessRadius - 2,
-                    playerNode.GridPos.Y - _settings.ExploreNodeProcessRadius - 2,
-                    _settings.ExploreNodeProcessRadius * 2 + 4,
-                    _settings.ExploreNodeProcessRadius * 2 + 4);
+                    playerNode.GridPos.X - _settings.PlayerVisibilityRadius - 2,
+                    playerNode.GridPos.Y - _settings.PlayerVisibilityRadius - 2,
+                    _settings.PlayerVisibilityRadius * 2 + 4,
+                    _settings.PlayerVisibilityRadius * 2 + 4);
             }
 
-           
             //Save to folder as animation
             //bitmap.Save(Path.Combine(_imageSessionFolder, $"Image_{_imageSessionNum++}.png"));
 

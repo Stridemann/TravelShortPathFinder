@@ -69,16 +69,16 @@
 
         #region Node
 
-        public SeenNodesGroup? Group;
+        public GraphPart? Group;
         public readonly Vector2 GridPos;
         public bool Unwalkable { get; set; }
         public bool IsVisited { get; set; }
         public int GraphExplorerIteration = -1;
-        public bool GraphExplorerProcessed => GraphExplorerIteration == SeenNodesGroup.DfsIteration;
+        public bool GraphExplorerProcessed => GraphExplorerIteration == GraphPart.DfsIteration;
 
         public void SetGraphExplorerProcessed()
         {
-            GraphExplorerIteration = SeenNodesGroup.DfsIteration;
+            GraphExplorerIteration = GraphPart.DfsIteration;
         }
 
         #endregion

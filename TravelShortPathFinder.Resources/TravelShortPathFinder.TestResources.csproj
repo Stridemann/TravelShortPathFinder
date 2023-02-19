@@ -16,6 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TravelShortPathFinder.Algorithm\TravelShortPathFinder.Algorithm.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Resources\InputNav_01.png" />
   </ItemGroup>
 

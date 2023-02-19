@@ -2,39 +2,39 @@
 {
     using System.Drawing;
     using System.Numerics;
-    using BenchmarkDotNet.Attributes;
     using Data;
+    using TravelShortPathFinder.Algorithm.Interfaces;
     using Utils;
 
     public class GraphMapExplorer
     {
         private const float UPDATE_DIST = 25;
-
         private readonly Settings _settings;
-        public List<SeenNodesGroup> GroupsList { get; } = new List<SeenNodesGroup>();
         private readonly Graph _graph;
-        private readonly NavGrid _navGrid;
-        private NavGridSegmentator _segmentator;
         private int _passedNodesCount;
         private Vector2 _playerCachedPos;
+        private readonly INextNodeSelector _nodeSelector;
 
-        public GraphMapExplorer(Settings settings, Graph graph)
+        public GraphMapExplorer(Settings settings, Graph graph, INextNodeSelector nodeSelector)
         {
             _settings = settings;
-            _navGrid = graph.NavGrid;
             _graph = graph;
+            _nodeSelector = nodeSelector;
+            Segmentator = new NavGridSegmentator(graph.NavGrid, _settings);
         }
 
-        public Node? CurrentRunNode { get; private set; }
-        public Node NextRunNode => CurrentRunNode;
-        public bool HasLocation => CurrentRunNode != null;
+        public List<GraphPart> GraphParts { get; } = new List<GraphPart>();
+        public NavGridSegmentator Segmentator { get; }
+
+        public Node? NextRunNode { get; private set; }
+        public bool HasLocation => NextRunNode != null;
         public float PercentComplete => (float)_passedNodesCount / _graph.Nodes.Count * 100;
-        
+
         public void Update(Vector2 playerPos)
         {
             if (!(Vector2.Distance(_playerCachedPos, playerPos) > UPDATE_DIST)
-                && CurrentRunNode is { IsVisited: false, Unwalkable: false }
-                && !(Vector2.Distance(CurrentRunNode.GridPos, playerPos) < _settings.ExploreNodeProcessRadius / 2))
+                && NextRunNode is { IsVisited: false, Unwalkable: false }
+                && !(Vector2.Distance(NextRunNode.GridPos, playerPos) < _settings.PlayerVisibilityRadius / 2))
             {
                 return;
             }
@@ -46,7 +46,7 @@
             {
                 if (node.IsVisited
                     || node.Unwalkable
-                    || Vector2.Distance(playerPos, node.GridPos) > _settings.ExploreNodeProcessRadius)
+                    || Vector2.Distance(playerPos, node.GridPos) > _settings.PlayerVisibilityRadius)
                 {
                     continue;
                 }
@@ -67,11 +67,10 @@
         {
             _passedNodesCount = 0;
 
-            GroupsList.Clear();
+            GraphParts.Clear();
             _playerCachedPos = playerPos;
-            CurrentRunNode = null;
+            NextRunNode = null;
 
-            _segmentator = new NavGridSegmentator(_navGrid, _settings);
             StartSegmentation(new Point((int)playerPos.X, (int)playerPos.Y));
         }
 
@@ -82,7 +81,7 @@
 
         private void StartSegmentation(Point segmentationStartPoint)
         {
-            _segmentator.Process(segmentationStartPoint, _graph);
+            Segmentator.Process(segmentationStartPoint, _graph);
             NavGridOptimizer.OptimizeGraph(_graph, _settings.SegmentationMinSegmentSize);
 
             if (_graph.Nodes.Count == 0)
@@ -90,7 +89,7 @@
                 return;
             }
 
-            Node endNode = null;
+            Node? endNode = null;
 
             //Start node from segmentationStartPoint pos is always first.
             var startPoint = _graph.Nodes[0];
@@ -123,6 +122,7 @@
                         if (node.PriorityFromEndDistance == 0)
                         {
                             node.PriorityFromEndDistance = procNode.PriorityFromEndDistance + 1;
+                            MapPriorityUpdated();
                         }
                     }
 
@@ -132,10 +132,10 @@
 
         private void NextRunNodeFromSeenNodes(IReadOnlyCollection<Node> seenNodes, Vector2 playerPos)
         {
-            CurrentRunNode = null;
+            NextRunNode = null;
             _passedNodesCount += seenNodes.Count;
 
-            SeenNodesGroup.DfsIteration++;
+            GraphPart.DfsIteration++;
 
             foreach (var seenNode in seenNodes)
             {
@@ -153,7 +153,7 @@
                     //lost connection with a group - making a new group for it
                     if (node.Group == null || (node.Group.IsGroupProcessed && !node.GraphExplorerProcessed))
                     {
-                        var newGroup = new SeenNodesGroup(SeenNodesGroup.DfsIteration);
+                        var newGroup = new GraphPart(GraphPart.DfsIteration);
 
                         //var avrgPos = Vector2.Zero;
                         var lastNode = node;
@@ -185,7 +185,7 @@
                         newGroup.AveragePos = lastNode.GridPos;
                         node.SetGraphExplorerProcessed();
                         node.Group = newGroup;
-                        GroupsList.Add(newGroup);
+                        GraphParts.Add(newGroup);
                     }
                     else if (!node.Group.IsGroupProcessed)
                     {
@@ -215,51 +215,43 @@
                         if (group.NodesCount == 0)
                         {
                             //LogError($"Removing group {group.GroupId}. Nodes: {group.NodesCount}. Before: {nodesBefore}");
-                            GroupsList.Remove(group);
+                            GraphParts.Remove(group);
                         }
                         else
                         {
                             node.SetGraphExplorerProcessed();
                             group.SetGraphExplorerProcessed();
-
                             //Optionally AveragePos can be updated here:
                             //group.AveragePos = avrgPos / group.NodesCount;
                         }
                     }
                 }
+
+                for (var i = 0; i < GraphParts.Count; i++)
+                {
+                    var seenNodesGroup = GraphParts[i];
+                    seenNodesGroup.Nodes.RemoveAll(x => x.IsVisited);
+
+                    if (seenNodesGroup.NodesCount == 0)
+                    {
+                        GraphParts.RemoveAt(i);
+                        i--;
+                    }
+                }
             }
 
-            if (GroupsList.Count > 0)
+            if (GraphParts.Count > 0)
             {
-                if (seenNodes.Count > 0 || CurrentRunNode == null || CurrentRunNode.IsVisited || CurrentRunNode.Unwalkable)
+                if (seenNodes.Count > 0 || NextRunNode == null || NextRunNode.IsVisited || NextRunNode.Unwalkable)
                 {
-                    for (var i = 0; i < GroupsList.Count; i++)
+                    if (GraphParts.Count > 0)
                     {
-                        var seenNodesGroup = GroupsList[i];
-                        seenNodesGroup.Nodes.RemoveAll(x => x.IsVisited);
-
-                        if (seenNodesGroup.NodesCount == 0)
-                        {
-                            GroupsList.RemoveAt(i);
-                            i--;
-                        }
-                    }
-
-                    if (GroupsList.Count > 0)
-                    {
-                        var bestGroup = GroupsList.Where(x => x.Nodes.Any(y => !y.Unwalkable))
-                                                  .OrderBy(x => x.Nodes.Count(y => !y.Unwalkable))
-                                                  .ThenBy(x => Vector2.Distance(playerPos, x.AveragePos))
-                                                  .First();
-
-                        CurrentRunNode = bestGroup
-                                         .Nodes.Where(x => !x.Unwalkable)
-                                         .OrderByDescending(x => x.PriorityFromEndDistance / _settings.LocalSelectNearNodeRange)
-                                         .ThenBy(x => Vector2.Distance(playerPos, x.GridPos))
-                                         .FirstOrDefault();
+                        NextRunNode = _nodeSelector.SelectNextNode(playerPos, GraphParts);
                     }
                 }
             }
         }
+
+        public event Action MapPriorityUpdated = delegate { };
     }
 }
