@@ -1,7 +1,7 @@
 #pragma warning disable CA1416
 namespace TravelShortPathFinder.Tests
 {
-    using System.Drawing;
+    using System.Numerics;
     using Algorithm.Data;
     using Algorithm.Logic;
     using Shouldly;
@@ -10,71 +10,49 @@ namespace TravelShortPathFinder.Tests
 
     public class AlgorithmTest
     {
-        private void DumpBitmap(Graph graph, string fileName)
-        {
-            var bitmap = new Bitmap(graph.NavGrid.Width, graph.NavGrid.Height);
-
-            for (var x = 0; x < graph.NavGrid.Width; x++)
-            {
-                for (var y = 0; y < graph.NavGrid.Height; y++)
-                {
-                    var gridVal = graph.NavGrid.WalkArray[x, y];
-
-                    if ((gridVal & WalkableFlag.NonWalkable) != 0)
-                    {
-                        bitmap.SetPixel(x, y, Color.Black);
-                    }
-                    else if (gridVal == WalkableFlag.FailedCenter)
-                    {
-                        bitmap.SetPixel(x, y, Color.Red);
-                    }
-                    else if (gridVal == WalkableFlag.PossibleSegmentPassed)
-                    {
-                        bitmap.SetPixel(x, y, Color.Green);
-                    }
-                    else if (gridVal == WalkableFlag.Walkable)
-                    {
-                        bitmap.SetPixel(x, y, Color.LightGray);
-                    }
-                    else
-                    {
-                        var node = graph.MapSegmentMatrix[x, y];
-                        var seed = node.Id;
-                        var rand = new Random(seed);
-                        var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
-                        bitmap.SetPixel(x, y, randomColor);
-                    }
-                }
-            }
-
-            using var g = Graphics.FromImage(bitmap);
-
-            foreach (var node in graph.Nodes)
-            {
-                foreach (var link in node.Links)
-                {
-                    g.DrawLine(
-                        Pens.White,
-                        node.BoundingCenter.X,
-                        node.BoundingCenter.Y,
-                        link.BoundingCenter.X,
-                        link.BoundingCenter.Y);
-                }
-            }
-
-            bitmap.Save(fileName);
-        }
-
         [Fact]
-        public void MainTest()
+        public void GraphMapExplorerTest()
         {
             var navCase = InputNavCases.Case1;
             var navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
-            var segmentator = new NavGridSegmentator(navGrid, new Settings());
+            var graph = new Graph(navGrid);
+
+            var nodeSelector = new DefaultNextNodeSelector(navCase.Settings);
+            var explorer = new GraphMapExplorer(navCase.Settings, graph, nodeSelector);
+            var playerPos = new Vector2(navCase.StartPoint.X, navCase.StartPoint.Y);
+            explorer.ProcessSegmentation(playerPos);
+            var result = new List<Node>();
+
+            graph.Nodes.Count.ShouldNotBe(0);
+
+            #region The part that be implemented in game/bot side:
+            //We just simply do explorer.Update(currentPlayerPos);
+            //And get the next point to go from explorer.NextRunNode if explorer.HasLocation is true
+
+            var curPlayerNode = graph.Nodes.First();
+
+            do
+            {
+                result.Add(curPlayerNode);
+                explorer.Update(curPlayerNode.GridPos);
+                curPlayerNode = explorer.NextRunNode;
+            } while (explorer.HasLocation);
+
+            #endregion
+
+            result.Count.ShouldNotBe(0);
+        }
+
+        [Fact]
+        public void SegmentatorTest()
+        {
+            var navCase = InputNavCases.Case1;
+            var navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
+            var segmentator = new NavGridSegmentator(navGrid, navCase.Settings);
             var graph = new Graph(navGrid);
             segmentator.Process(navCase.StartPoint, graph);
             NavGridOptimizer.OptimizeGraph(graph, 300);
-            DumpBitmap(graph, "DumpBitmap_Opt.png");
+            //GraphDebugDrawUtils.DumpBitmap(graph, "DumpBitmap_Opt.png");
         }
 
         [Fact]
