@@ -95,7 +95,7 @@
                     break;
                 }
 
-                var path = SimplePathFinder.FindPath(curPlayerNode, _explorer.NextRunNode);
+                var path = GraphPathFinder.FindPath(curPlayerNode, _explorer.NextRunNode);
 
                 if (path == null)
                 {

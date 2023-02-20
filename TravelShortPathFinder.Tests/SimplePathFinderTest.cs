@@ -25,7 +25,7 @@
 
             var from = testGraph[0];
             var to = testGraph[^1];
-            var path = SimplePathFinder.FindPath(from, to);
+            var path = GraphPathFinder.FindPath(from, to);
             path.ShouldNotBeNull();
             path.Count.ShouldBe(4);
             path[^1].ShouldBe(to);

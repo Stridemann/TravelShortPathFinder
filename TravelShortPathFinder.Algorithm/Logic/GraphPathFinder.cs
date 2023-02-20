@@ -2,7 +2,7 @@
 
 namespace TravelShortPathFinder.Algorithm.Logic
 {
-    public static class SimplePathFinder
+    public static class GraphPathFinder
     {
         /// <summary>
         /// Calculates the path between two nodes of one graph using BFS algorithm.
