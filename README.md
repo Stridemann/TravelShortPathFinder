@@ -2,7 +2,7 @@
 
 Attempt to solve Traveling Salesman problem in polilinear time + nav grid segmentation (convert to graph)
 
-WIKI [full documentation](https://github.com/Stridemann/TravelShortPathFinder/wiki/TravelShortPathFinder-algorithm-documentation)
+Wiki [full documentation](https://github.com/Stridemann/TravelShortPathFinder/wiki/TravelShortPathFinder-algorithm-documentation)
 
 # Short technical intro.
 This algorithm has been optimized for use in game development or bot creation, where each iteration of the algorithm must be as fast as possible. It can support nav grids of any size, as long as they are sensibly large, and provides a very fast response for the next move point. However, there is a cost to this speed in the form of an initial segmentation, which takes some time to complete, but only needs to be done once (please refer to the Benchmarks section).
@@ -18,6 +18,8 @@ If you need the shortest sequential path as a result, then a simulation is requi
 
 
 # Fast start
+
+Note: you can also use example Bitmap+Settings from TravelShortPathFinder.TestResources project: InputNavCases.Case1, Case2, ... Case4.
 
 ```CS
 using System.Drawing;
