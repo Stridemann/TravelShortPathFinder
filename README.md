@@ -40,7 +40,9 @@ public class FastStart
         Settings settings = new Settings(
             segmentationSquareSize: 50, //The max size of segment square (in pixels) (check settings image visualization)
             segmentationMinSegmentSize: 100, //Remove segments that less than this square (in pixels^2)
-            playerVisibilityRadius: 60); //The player visibility radius (in pixels)
+            playerVisibilityRadius: 60,//The player visibility radius (in pixels)
+            optimizationMoveDist: 5 //The distance from last algorithm update pos in which the GraphMapExplorer.Update will not trigger algorithm
+            ); 
 
         _explorer = new GraphMapExplorer(navGrid, settings);
 
