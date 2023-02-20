@@ -58,7 +58,7 @@ public class FastStart
         //Optimized and can be called each frame, usually will update _explorer.NextRunNode
         _explorer.Update(playerPosition); 
 
-        if (_explorer.NextRunNode != null)
+        if (_explorer.NextRunNode != null) //or _explorer.HasLocation
         {
             //This will be the next node to run to.
             //it will not be the nearest node and can be in any position of map (check documentation)
