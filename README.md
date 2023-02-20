@@ -14,3 +14,67 @@ If you need the shortest sequential path as a result, then a simulation is requi
 
 
 ![FullAlgoDemo](https://user-images.githubusercontent.com/7633163/219960587-623a6fa2-785b-4e80-8dfc-acdc7daff222.gif)
+
+
+# Fast start
+
+```CS
+using System.Drawing;
+using TravelShortPathFinder.Algorithm.Data;
+using TravelShortPathFinder.Algorithm.Logic;
+using TravelShortPathFinder.Algorithm.Utils;
+
+public class FastStart
+{
+    private readonly GraphMapExplorer _explorer;
+    private Node _currentPlayerNode;
+
+    public FastStart(Bitmap myBitmap)
+    {
+        //Convert black/white image to NavGrid
+        NavGrid navGrid = NavGridProvider.FromBitmap(myBitmap);
+
+        Settings settings = new Settings(
+            segmentationSquareSize: 50, //The max size of segment square (in pixels) (check settings image visualization)
+            segmentationMinSegmentSize: 100, //Remove segments that less than this square (in pixels^2)
+            playerVisibilityRadius: 60); //The player visibility radius (in pixels)
+
+        _explorer = new GraphMapExplorer(navGrid, settings);
+
+        _explorer.ProcessSegmentation(new Point(123, 123)); //player location pixel
+
+        if (_explorer.Graph.Nodes.Count == 0)
+        {
+            throw new InvalidOperationException("Segmentation failed. Probably because of wrong initial point.");
+        }
+
+        //The first node  is player location used in ProcessSegmentation method
+        _currentPlayerNode = _explorer.Graph.Nodes.First();
+        _explorer.Update(_currentPlayerNode.Pos);
+    }
+
+    public void Update(Point playerPosition)
+    {
+        //Optimized and can be called each frame, usually will update _explorer.NextRunNode
+        _explorer.Update(playerPosition); 
+
+        if (_explorer.NextRunNode != null)
+        {
+            //This will be the next node to run to.
+            //it will not be the nearest node and can be in any position of map (check documentation)
+            Node nextPoint = _explorer.NextRunNode;
+
+            //Now use own pathfinder to run player to.
+            //Or use graph path finder to get a path to next point by graph
+            List<Node>? path = GraphPathFinder.FindPath(_currentPlayerNode, nextPoint);
+            //You can use just the first point in path to run player to, after player arrived just call Update and FindPath again
+
+            _currentPlayerNode = nextPoint;
+        }
+    }
+}
+```
+
+Settings parameters visualized:
+
+![Settings](https://user-images.githubusercontent.com/7633163/220201652-25fe89cb-62f9-4c77-a548-47c9316535fd.png)
