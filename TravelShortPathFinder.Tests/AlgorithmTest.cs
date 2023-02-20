@@ -1,12 +1,12 @@
 #pragma warning disable CA1416
 namespace TravelShortPathFinder.Tests
 {
-    using System.Numerics;
     using Algorithm.Data;
     using Algorithm.Logic;
     using Shouldly;
     using TestResources;
     using TestResources.Properties;
+    using TravelShortPathFinder.Algorithm.Utils;
 
     public class AlgorithmTest
     {
@@ -15,28 +15,24 @@ namespace TravelShortPathFinder.Tests
         {
             var navCase = InputNavCases.Case1;
             var navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
-            var graph = new Graph(navGrid);
-
-            var nodeSelector = new DefaultNextNodeSelector(navCase.Settings);
-            var explorer = new GraphMapExplorer(navCase.Settings, graph, nodeSelector);
-            var playerPos = new Vector2(navCase.StartPoint.X, navCase.StartPoint.Y);
-            explorer.ProcessSegmentation(playerPos);
+            var explorer = new GraphMapExplorer(navGrid, navCase.Settings);
+            explorer.ProcessSegmentation(navCase.StartPoint);
             var result = new List<Node>();
 
-            graph.Nodes.Count.ShouldNotBe(0);
+            explorer.Graph.Nodes.Count.ShouldNotBe(0);
 
             #region The part that be implemented in game/bot side:
             //We just simply do explorer.Update(currentPlayerPos);
             //And get the next point to go from explorer.NextRunNode if explorer.HasLocation is true
 
-            var curPlayerNode = graph.Nodes.First();
+            var curPlayerNode = explorer.Graph.Nodes.First();
 
             do
             {
                 result.Add(curPlayerNode);
-                explorer.Update(curPlayerNode.GridPos);
+                explorer.Update(curPlayerNode.Pos);
                 curPlayerNode = explorer.NextRunNode;
-            } while (explorer.HasLocation);
+            } while (curPlayerNode != null);
 
             #endregion
 

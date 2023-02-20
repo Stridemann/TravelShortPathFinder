@@ -4,14 +4,20 @@ namespace TravelShortPathFinder.Algorithm.Logic
 {
     public static class SimplePathFinder
     {
+        /// <summary>
+        /// Calculates the path between two nodes of one graph using BFS algorithm.
+        /// "to" node is the last node in result list. "from" node is not added to list.
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <returns></returns>
         public static List<Node>? FindPath(Node from, Node to)
         {
             var result = new List<Node>();
 
             if (from == to)
                 return result;
-
-            var nodesMap = new Dictionary<Node, Node>(); //save the back path map
+            
             var queue = new Queue<Node>();
 
             Node.ProcessIteration++;
@@ -25,7 +31,8 @@ namespace TravelShortPathFinder.Algorithm.Logic
                     if (childNode.IsProcessed)
                         continue;
                     childNode.SetProcessed();
-                    nodesMap[childNode] = node;
+
+                    childNode.FindPathPreviousNode = node;
 
                     if (childNode == to)
                     {
@@ -34,11 +41,9 @@ namespace TravelShortPathFinder.Algorithm.Logic
                         while (prevNode != from)
                         {
                             result.Insert(0, prevNode);
-                            prevNode = nodesMap[prevNode];
+                            prevNode = prevNode.FindPathPreviousNode;
                         }
-
-                        //result.Insert(0, from);
-
+                        
                         return result;
                     }
 

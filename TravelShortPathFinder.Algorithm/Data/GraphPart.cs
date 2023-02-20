@@ -1,6 +1,6 @@
 ﻿namespace TravelShortPathFinder.Algorithm.Data
 {
-    using System.Numerics;
+    using System.Drawing;
 
     public class GraphPart
     {
@@ -14,7 +14,7 @@
         }
 
         public int Id { get; }
-        public Vector2 AveragePos { get; set; }
+        public Point AveragePos { get; set; }
         public int NodesCount => Nodes.Count;
         public bool IsGroupProcessed => GraphExplorerIteration == DfsIteration;
 

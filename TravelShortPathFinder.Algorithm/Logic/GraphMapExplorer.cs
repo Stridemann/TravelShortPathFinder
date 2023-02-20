@@ -1,40 +1,39 @@
 ﻿namespace TravelShortPathFinder.Algorithm.Logic
 {
     using System.Drawing;
-    using System.Numerics;
     using Data;
-    using TravelShortPathFinder.Algorithm.Interfaces;
+    using Interfaces;
     using Utils;
 
     public class GraphMapExplorer
     {
         private const float UPDATE_DIST = 25;
         private readonly Settings _settings;
-        private readonly Graph _graph;
-        private int _passedNodesCount;
-        private Vector2 _playerCachedPos;
         private readonly INextNodeSelector _nodeSelector;
+        private readonly List<GraphPart> _graphParts = new List<GraphPart>();
+        private readonly NavGridSegmentator _segmentator;
+        private int _passedNodesCount;
+        private Point _playerCachedPos;
 
-        public GraphMapExplorer(Settings settings, Graph graph, INextNodeSelector nodeSelector)
+        public GraphMapExplorer(NavGrid navGrid, Settings settings, INextNodeSelector? nodeSelector = null)
         {
             _settings = settings;
-            _graph = graph;
-            _nodeSelector = nodeSelector;
-            Segmentator = new NavGridSegmentator(graph.NavGrid, _settings);
+            Graph = new Graph(navGrid);
+            _nodeSelector = nodeSelector ?? new DefaultNextNodeSelector(settings);
+            _segmentator = new NavGridSegmentator(navGrid, _settings);
         }
 
-        public List<GraphPart> GraphParts { get; } = new List<GraphPart>();
-        public NavGridSegmentator Segmentator { get; }
-
+        public Graph Graph { get; }
+        private IReadOnlyList<GraphPart> GraphParts => _graphParts;
         public Node? NextRunNode { get; private set; }
         public bool HasLocation => NextRunNode != null;
-        public float PercentComplete => (float)_passedNodesCount / _graph.Nodes.Count * 100;
+        public float PercentComplete => (float)_passedNodesCount / Graph.Nodes.Count * 100;
 
-        public void Update(Vector2 playerPos)
+        public void Update(Point playerPos)
         {
-            if (!(Vector2.Distance(_playerCachedPos, playerPos) > UPDATE_DIST)
+            if (!(_playerCachedPos.Distance(playerPos) > UPDATE_DIST)
                 && NextRunNode is { IsVisited: false, Unwalkable: false }
-                && !(Vector2.Distance(NextRunNode.GridPos, playerPos) < _settings.PlayerVisibilityRadius / 2))
+                && !(NextRunNode.Pos.Distance(playerPos) < _settings.PlayerVisibilityRadius / 2))
             {
                 return;
             }
@@ -42,11 +41,11 @@
             _playerCachedPos = playerPos;
             var seenNodes = new List<Node>();
 
-            foreach (var node in _graph.Nodes)
+            foreach (var node in Graph.Nodes)
             {
                 if (node.IsVisited
                     || node.Unwalkable
-                    || Vector2.Distance(playerPos, node.GridPos) > _settings.PlayerVisibilityRadius)
+                    || playerPos.Distance(node.Pos) > _settings.PlayerVisibilityRadius)
                 {
                     continue;
                 }
@@ -60,54 +59,63 @@
 
         public void ResetUnwalkable()
         {
-            _graph.Nodes.ForEach(x => x.Unwalkable = false);
+            Graph.Nodes.ForEach(x => x.Unwalkable = false);
         }
 
-        public void ProcessSegmentation(Vector2 playerPos)
+        /// <summary>
+        /// Start segmentation from specified Point.
+        /// </summary>
+        /// <param name="gridPos">This can be player start position converted into grid coord</param>
+        /// <param name="customEndNode">Can be used if we want to specify where we want the player will finish map explore (not strict, but will try to finish in that area).</param>
+        public void ProcessSegmentation(Point gridPos, Node? customEndNode = null)
         {
             _passedNodesCount = 0;
 
-            GraphParts.Clear();
-            _playerCachedPos = playerPos;
+            _graphParts.Clear();
+            _playerCachedPos = gridPos;
             NextRunNode = null;
 
-            StartSegmentation(new Point((int)playerPos.X, (int)playerPos.Y));
+            StartSegmentation(gridPos, customEndNode);
         }
 
         public void UpdateForTriggerableBlockage(Point gridCell)
         {
-            StartSegmentation(gridCell);
+            StartSegmentation(gridCell, null);
         }
 
-        private void StartSegmentation(Point segmentationStartPoint)
+        private void StartSegmentation(Point segmentationStartPoint, Node? customEndNode)
         {
-            Segmentator.Process(segmentationStartPoint, _graph);
-            NavGridOptimizer.OptimizeGraph(_graph, _settings.SegmentationMinSegmentSize);
+            _segmentator.Process(segmentationStartPoint, Graph);
+            NavGridOptimizer.OptimizeGraph(Graph, _settings.SegmentationMinSegmentSize);
 
-            if (_graph.Nodes.Count == 0)
+            if (Graph.Nodes.Count == 0)
             {
                 return;
             }
 
-            Node? endNode = null;
+            Node? endNode = customEndNode;
 
-            //Start node from segmentationStartPoint pos is always first.
-            var startPoint = _graph.Nodes[0];
+            //User can use own end node where player will finish map explore
+            if (endNode == null)
+            {
+                //Start node from segmentationStartPoint pos is always first.
+                var startPoint = Graph.Nodes[0];
 
-            //Find the farthest node from start position
-            BreadthFirstSearch.Process(
-                startPoint,
-                procNode =>
-                {
-                    if (procNode is { Unwalkable: false })
+                //Find the farthest node from start position
+                BreadthFirstSearch.Process(
+                    startPoint,
+                    procNode =>
                     {
-                        endNode = procNode;
+                        if (procNode is { Unwalkable: false })
+                        {
+                            endNode = procNode;
 
-                        return true;
-                    }
+                            return true;
+                        }
 
-                    return false;
-                });
+                        return false;
+                    });
+            }
 
             endNode!.PriorityFromEndDistance = 1;
 
@@ -122,7 +130,6 @@
                         if (node.PriorityFromEndDistance == 0)
                         {
                             node.PriorityFromEndDistance = procNode.PriorityFromEndDistance + 1;
-                            MapPriorityUpdated();
                         }
                     }
 
@@ -130,7 +137,7 @@
                 });
         }
 
-        private void NextRunNodeFromSeenNodes(IReadOnlyCollection<Node> seenNodes, Vector2 playerPos)
+        private void NextRunNodeFromSeenNodes(IReadOnlyCollection<Node> seenNodes, Point playerPos)
         {
             NextRunNode = null;
             _passedNodesCount += seenNodes.Count;
@@ -155,9 +162,6 @@
                     {
                         var newGroup = new GraphPart(GraphPart.DfsIteration);
 
-                        //var avrgPos = Vector2.Zero;
-                        var lastNode = node;
-
                         BreadthFirstSearch.Process(
                             node,
                             procNode =>
@@ -169,29 +173,22 @@
                                     procNode.SetGraphExplorerProcessed();
                                     newGroup.Nodes.Add(procNode);
 
-                                    //avrgPos += procNode.GridPos;
-
-                                    lastNode = procNode;
-
                                     return true;
                                 }
 
-                                //LogMessage($"-New node: {procNode.Id} for new group: {newGroup.GroupId}. Visited?: {procNode.IsVisited}, Processed: {procNode.GraphExplorerProcessed}");
                                 return false;
                             });
 
-                        //as alternative can be:
-                        //newGroup.AveragePos = avrgPos / newGroup.NodesCount;
-                        newGroup.AveragePos = lastNode.GridPos;
+                        newGroup.AveragePos = node.Pos;
+
                         node.SetGraphExplorerProcessed();
                         node.Group = newGroup;
-                        GraphParts.Add(newGroup);
+                        _graphParts.Add(newGroup);
                     }
                     else if (!node.Group.IsGroupProcessed)
                     {
                         var group = node.Group;
 
-                        //var nodesBefore = group.Nodes.Count;
                         group.Nodes.Clear();
 
                         // var avrgPos = Vector2.Zero;
@@ -205,7 +202,7 @@
                                     procNode.SetGraphExplorerProcessed();
                                     group.Nodes.Add(procNode);
 
-                                    //avrgPos += procNode.GridPos;
+                                    //avrgPos += procNode.Pos;
                                     return true;
                                 }
 
@@ -214,44 +211,37 @@
 
                         if (group.NodesCount == 0)
                         {
-                            //LogError($"Removing group {group.GroupId}. Nodes: {group.NodesCount}. Before: {nodesBefore}");
-                            GraphParts.Remove(group);
+                            //LogMessage($"Removing group {group.GroupId}.");
+                            _graphParts.Remove(group);
                         }
                         else
                         {
                             node.SetGraphExplorerProcessed();
                             group.SetGraphExplorerProcessed();
-                            //Optionally AveragePos can be updated here:
-                            //group.AveragePos = avrgPos / group.NodesCount;
                         }
                     }
                 }
 
-                for (var i = 0; i < GraphParts.Count; i++)
+                for (var i = 0; i < _graphParts.Count; i++)
                 {
-                    var seenNodesGroup = GraphParts[i];
+                    var seenNodesGroup = _graphParts[i];
                     seenNodesGroup.Nodes.RemoveAll(x => x.IsVisited);
 
                     if (seenNodesGroup.NodesCount == 0)
                     {
-                        GraphParts.RemoveAt(i);
+                        _graphParts.RemoveAt(i);
                         i--;
                     }
                 }
             }
 
-            if (GraphParts.Count > 0)
+            if (_graphParts.Count > 0)
             {
                 if (seenNodes.Count > 0 || NextRunNode == null || NextRunNode.IsVisited || NextRunNode.Unwalkable)
                 {
-                    if (GraphParts.Count > 0)
-                    {
-                        NextRunNode = _nodeSelector.SelectNextNode(playerPos, GraphParts);
-                    }
+                    NextRunNode = _nodeSelector.SelectNextNode(playerPos, _graphParts);
                 }
             }
         }
-
-        public event Action MapPriorityUpdated = delegate { };
     }
 }

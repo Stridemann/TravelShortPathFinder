@@ -7,9 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TravelShortPathFinder.Algor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TravelShortPathFinder.Tests", "TravelShortPathFinder.Tests\TravelShortPathFinder.Tests.csproj", "{C9C827F8-B36A-46CC-AC5E-EFDD7EF9E68D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TravelShortPathFinder.Gui", "TravelShortPathFinder.Gui\TravelShortPathFinder.Gui.csproj", "{C95B7C5A-DF92-406F-A8B2-E4674BDAC029}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TravelShortPathFinder.Gui", "TravelShortPathFinder.Gui\TravelShortPathFinder.Gui.csproj", "{C95B7C5A-DF92-406F-A8B2-E4674BDAC029}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TravelShortPathFinder.TestResources", "TravelShortPathFinder.Resources\TravelShortPathFinder.TestResources.csproj", "{DD422D05-6919-43AD-A3C5-19AF8E85801D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TravelShortPathFinder.TestResources", "TravelShortPathFinder.Resources\TravelShortPathFinder.TestResources.csproj", "{DD422D05-6919-43AD-A3C5-19AF8E85801D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TravelShortPathFinder.Benchmarks", "TravelShortPathFinder.Benchmarks\TravelShortPathFinder.Benchmarks.csproj", "{E1547FCD-0DC7-46F5-B821-89DB011A6301}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{DD422D05-6919-43AD-A3C5-19AF8E85801D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD422D05-6919-43AD-A3C5-19AF8E85801D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD422D05-6919-43AD-A3C5-19AF8E85801D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1547FCD-0DC7-46F5-B821-89DB011A6301}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1547FCD-0DC7-46F5-B821-89DB011A6301}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1547FCD-0DC7-46F5-B821-89DB011A6301}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1547FCD-0DC7-46F5-B821-89DB011A6301}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1416
-
-namespace TravelShortPathFinder.Algorithm.Logic
+namespace TravelShortPathFinder.Algorithm.Utils
 {
     using System.Drawing;
     using System.Drawing.Imaging;
@@ -15,7 +14,7 @@ namespace TravelShortPathFinder.Algorithm.Logic
 
             // Lock the bitmap bits to get a pointer to the pixel data
             var data = image.LockBits(new Rectangle(0, 0, imageWidth, imageHeight), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            
+
             // Get a pointer to the pixel data
             int* pData = (int*)data.Scan0;
 

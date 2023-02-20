@@ -8,8 +8,6 @@
         private readonly NavGrid _navGrid;
         private readonly int _segmentSquareSize;
         private readonly Settings _settings;
-        public event Action MapUpdated = delegate { };//For debug only
-        public event Action MapSegmentAdded = delegate { };//For debug only
 
         public NavGridSegmentator(NavGrid navGrid, Settings settings)
         {
@@ -78,7 +76,6 @@
                     currentNode.PossibleLinks.Clear(); //just clear it to free some memory
                     currentNode.UpdateBoundingCenter();
                     graph.Nodes.Add(currentNode);
-                    MapSegmentAdded();
                 }
 
                 var orderedSectors = currentNode.PossibleSegments.OrderBy(x => PointDist(currentNode.Pos, x));
@@ -108,8 +105,7 @@
             if (value.Contain(WalkableFlag.NonWalkable))
             {
                 _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Passed;
-                MapUpdated();
-
+    
                 return;
             }
 
@@ -150,7 +146,6 @@
             if (absX == _segmentSquareSize || absY == _segmentSquareSize)
             {
                 _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.PossibleSegmentStart;
-                MapUpdated();
                 node.PossibleSegments.Push(point);
 
                 node.Stack.Push(new Point(point.X + 1, point.Y + 1));
@@ -163,28 +158,27 @@
 
             node.Square++;
 
-            if (node.Min.X > point.X)
+            if (node.SegmentMin.X > point.X)
             {
-                node.Min.X = point.X;
+                node.SegmentMin.X = point.X;
             }
 
-            if (node.Min.Y > point.Y)
+            if (node.SegmentMin.Y > point.Y)
             {
-                node.Min.Y = point.Y;
+                node.SegmentMin.Y = point.Y;
             }
 
-            if (node.Max.X < point.X)
+            if (node.SegmentMax.X < point.X)
             {
-                node.Max.X = point.X;
+                node.SegmentMax.X = point.X;
             }
 
-            if (node.Max.Y < point.Y)
+            if (node.SegmentMax.Y < point.Y)
             {
-                node.Max.Y = point.Y;
+                node.SegmentMax.Y = point.Y;
             }
 
             _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Passed;
-            MapUpdated();
 
             if (!_settings.FastSegmentationThroughOnePoint)
             {

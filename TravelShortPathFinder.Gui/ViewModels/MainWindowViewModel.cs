@@ -16,11 +16,13 @@
     using Algorithm.Logic;
     using Prism.Mvvm;
     using TestResources;
+    using TravelShortPathFinder.Algorithm.Utils;
     using Brushes = System.Drawing.Brushes;
     using Color = System.Drawing.Color;
     using FontStyle = System.Drawing.FontStyle;
     using Pen = System.Drawing.Pen;
     using PixelFormat = System.Drawing.Imaging.PixelFormat;
+    using Point = System.Drawing.Point;
 
     public class MainWindowViewModel : BindableBase
     {
@@ -35,7 +37,6 @@
         private Graph _graph;
         private GraphMapExplorer _explorer;
         private Settings _settings;
-        private Vector2 _playerPos;
 
         public MainWindowViewModel()
         {
@@ -56,7 +57,7 @@
 
         private void Explore()
         {
-            var navCase = InputNavCases.Case5;
+            var navCase = InputNavCases.Case2;
             _settings = navCase.Settings;
 
             _imageSessionFolder = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
@@ -66,39 +67,26 @@
                 () => { BitmapImage = ConvertBitmapToBitmapImage(navCase.Bitmap); });
             Thread.Sleep(1000);
             _navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
-            _graph = new Graph(_navGrid);
-            _explorer = new GraphMapExplorer(_settings, _graph, new DefaultNextNodeSelector(_settings));
-
-            //_explorer.MapPriorityUpdated += () =>
-            //{
-            //    RepaintBitmap(null, null, true);
-            //    Thread.Sleep(0);
-            //};
-
-            //_explorer.Segmentator.MapSegmentAdded += () =>
-            //{
-            //    RepaintBitmap(null, null, true);
-            //    Thread.Sleep(20);
-            //};
-
-            _playerPos = new Vector2(navCase.StartPoint.X, navCase.StartPoint.Y);
-            _explorer.ProcessSegmentation(_playerPos);
+            _explorer = new GraphMapExplorer(_navGrid, _settings);
+            _graph = _explorer.Graph;
+          
+            _explorer.ProcessSegmentation(navCase.StartPoint);
             
             var curPlayerNode = _graph.Nodes.First();
 
-            _explorer.Update(_playerPos);
+            _explorer.Update(curPlayerNode.Pos);
             RepaintBitmap(null, null, true);
 
-            //Thread.Sleep(2000);
+            Thread.Sleep(2000);
 
             if (!_explorer.HasLocation)
                 return;
 
-            const int DELAY = 250;
+            const int DELAY = 150;
 
             do
             {
-                _explorer.Update(curPlayerNode.GridPos);
+                _explorer.Update(curPlayerNode.Pos);
 
                 if (!_explorer.HasLocation)
                 {
@@ -229,8 +217,8 @@
 
                 g.FillEllipse(
                     node.IsVisited ? new SolidBrush(Color.FromArgb(100, Color.Black)) : Brushes.MediumBlue,
-                    node.GridPos.X - CIRCLE_SIZE / 2,
-                    node.GridPos.Y - CIRCLE_SIZE / 2,
+                    node.Pos.X - CIRCLE_SIZE / 2,
+                    node.Pos.Y - CIRCLE_SIZE / 2,
                     CIRCLE_SIZE,
                     CIRCLE_SIZE);
 
@@ -238,14 +226,14 @@
                 {
                     g.DrawLine(
                         new Pen(randomColor),
-                        node.GridPos.X,
-                        node.GridPos.Y,
-                        link.GridPos.X,
-                        link.GridPos.Y);
+                        node.Pos.X,
+                        node.Pos.Y,
+                        link.Pos.X,
+                        link.Pos.Y);
                 }
 
                 //if (node.PriorityFromEndDistance != 0)
-                //    g.DrawString(node.PriorityFromEndDistance.ToString(), font, Brushes.White, new PointF(node.GridPos.X, node.GridPos.Y));
+                //    g.DrawString(node.PriorityFromEndDistance.ToString(), font, Brushes.White, new PointF(node.Pos.X, node.Pos.Y));
             }
 
             if (navPath != null)
@@ -258,10 +246,10 @@
                     {
                         g.DrawLine(
                             Pens.White,
-                            prev.GridPos.X,
-                            prev.GridPos.Y,
-                            node.GridPos.X,
-                            node.GridPos.Y);
+                            prev.Pos.X,
+                            prev.Pos.Y,
+                            node.Pos.X,
+                            node.Pos.Y);
                     }
 
                     prev = node;
@@ -272,15 +260,15 @@
             {
                 g.DrawEllipse(
                     Pens.White,
-                    playerNode.GridPos.X - _settings.PlayerVisibilityRadius,
-                    playerNode.GridPos.Y - _settings.PlayerVisibilityRadius,
+                    playerNode.Pos.X - _settings.PlayerVisibilityRadius,
+                    playerNode.Pos.Y - _settings.PlayerVisibilityRadius,
                     _settings.PlayerVisibilityRadius * 2,
                     _settings.PlayerVisibilityRadius * 2);
 
                 g.DrawEllipse(
                     Pens.White,
-                    playerNode.GridPos.X - _settings.PlayerVisibilityRadius - 2,
-                    playerNode.GridPos.Y - _settings.PlayerVisibilityRadius - 2,
+                    playerNode.Pos.X - _settings.PlayerVisibilityRadius - 2,
+                    playerNode.Pos.Y - _settings.PlayerVisibilityRadius - 2,
                     _settings.PlayerVisibilityRadius * 2 + 4,
                     _settings.PlayerVisibilityRadius * 2 + 4);
             }

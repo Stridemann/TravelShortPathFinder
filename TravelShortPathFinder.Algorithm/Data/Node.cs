@@ -2,7 +2,6 @@
 {
     using System.Diagnostics;
     using System.Drawing;
-    using System.Numerics;
 
     [DebuggerDisplay("Node Id:{Id}, IsVisited: {IsVisited}, Links: {Links.Count}")]
     public class Node
@@ -15,25 +14,25 @@
 
         private readonly List<Node> _links = new List<Node>();
         public static int UniqIdCounter;
-        public Point Min = new Point(int.MaxValue, int.MaxValue);
-        public Point Max = new Point(int.MinValue, int.MinValue);
+        public Point SegmentMin = new Point(int.MaxValue, int.MaxValue);
+        public Point SegmentMax = new Point(int.MinValue, int.MinValue);
         public int PriorityFromEndDistance;
         public int Square;
+        internal Node? FindPathPreviousNode;
 
         public Node(int id, Point pos)
         {
             Id = id;
             Pos = pos;
-            GridPos = new Vector2(pos.X, pos.Y);
         }
 
         public IReadOnlyList<Node> Links => _links;
         public Point BoundingCenter { get; private set; }
-        public bool IsRemovedByOptimizer { get; set; }
+        public bool IsRemovedByOptimizer { get; internal set; }
 
         public void UpdateBoundingCenter()
         {
-            BoundingCenter = new Point((Max.X + Min.X) / 2, (Max.Y + Min.Y) / 2);
+            BoundingCenter = new Point((SegmentMax.X + SegmentMin.X) / 2, (SegmentMax.Y + SegmentMin.Y) / 2);
         }
 
         public void LinkWith(Node node)
@@ -56,11 +55,11 @@
 
         #region IsProcessed
 
-        public bool IsProcessed => _curProcessIter == ProcessIteration;
-        public static int ProcessIteration;
+        internal bool IsProcessed => _curProcessIter == ProcessIteration;
+        internal static int ProcessIteration;
         private int _curProcessIter = -1;
 
-        public void SetProcessed()
+        internal void SetProcessed()
         {
             _curProcessIter = ProcessIteration;
         }
@@ -69,21 +68,20 @@
 
         #region Node
 
-        public GraphPart? Group;
-        public readonly Vector2 GridPos;
+        public GraphPart? Group { get; internal set; }
         public bool Unwalkable { get; set; }
-        public bool IsVisited { get; set; }
-        public int GraphExplorerIteration = -1;
-        public bool GraphExplorerProcessed => GraphExplorerIteration == GraphPart.DfsIteration;
+        public bool IsVisited { get; internal set; }
+        internal int GraphExplorerIteration = -1;
+        internal bool GraphExplorerProcessed => GraphExplorerIteration == GraphPart.DfsIteration;
 
-        public void SetGraphExplorerProcessed()
+        internal void SetGraphExplorerProcessed()
         {
             GraphExplorerIteration = GraphPart.DfsIteration;
         }
 
         #endregion
 
-        public bool IsLinkedTo(Node node)
+        internal bool IsLinkedTo(Node node)
         {
             if (Links.Contains(node))
                 return true;

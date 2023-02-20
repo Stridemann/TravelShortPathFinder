@@ -1,10 +1,10 @@
-﻿using System.Numerics;
-using TravelShortPathFinder.Algorithm.Data;
-
-namespace TravelShortPathFinder.Algorithm.Interfaces
+﻿namespace TravelShortPathFinder.Algorithm.Interfaces
 {
+    using System.Drawing;
+    using Data;
+
     public interface INextNodeSelector
     {
-        Node? SelectNextNode(Vector2 playerPos, List<GraphPart> graphParts);
+        Node? SelectNextNode(Point playerPos, List<GraphPart> graphParts);
     }
 }

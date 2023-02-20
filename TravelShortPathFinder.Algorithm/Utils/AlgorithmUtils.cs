@@ -1,6 +1,6 @@
 ﻿namespace TravelShortPathFinder.Algorithm.Utils
 {
-    using System.Numerics;
+    using System.Drawing;
     using Data;
     using Interfaces;
     using Logic;
@@ -9,29 +9,28 @@
     {
         public static List<Node> GetShortestPath(
             NavGrid navGrid,
-            Vector2 startPoint,
+            Point startPoint,
             Settings settings,
             INextNodeSelector? nodeSelector = null)
         {
-            var graph = new Graph(navGrid);
             nodeSelector ??= new DefaultNextNodeSelector(settings);
-            var explorer = new GraphMapExplorer(settings, graph, nodeSelector);
+            var explorer = new GraphMapExplorer(navGrid, settings, nodeSelector);
             explorer.ProcessSegmentation(startPoint);
             var result = new List<Node>();
 
-            if (graph.Nodes.Count == 0)
+            if (explorer.Graph.Nodes.Count == 0)
             {
                 return result;
             }
 
-            var curPlayerNode = graph.Nodes.First();
+            var curPlayerNode = explorer.Graph.Nodes.First();
 
             do
             {
                 result.Add(curPlayerNode);
-                explorer.Update(curPlayerNode.GridPos);
+                explorer.Update(curPlayerNode.Pos);
                 curPlayerNode = explorer.NextRunNode;
-            } while (explorer.HasLocation);
+            } while (curPlayerNode != null);
 
             return result;
         }

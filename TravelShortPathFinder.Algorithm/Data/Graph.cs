@@ -1,7 +1,5 @@
 ﻿namespace TravelShortPathFinder.Algorithm.Data
 {
-    using Logic;
-
     public class Graph
     {
         public Graph(NavGrid navGrid)
