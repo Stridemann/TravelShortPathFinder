@@ -7,7 +7,6 @@
 
     public class GraphMapExplorer
     {
-        private const float UPDATE_DIST = 25;
         private readonly Settings _settings;
         private readonly INextNodeSelector _nodeSelector;
         private readonly List<GraphPart> _graphParts = new List<GraphPart>();
@@ -31,7 +30,7 @@
 
         public void Update(Point playerPos)
         {
-            if (!(_playerCachedPos.Distance(playerPos) > UPDATE_DIST)
+            if (!(_playerCachedPos.Distance(playerPos) > _settings.OptimizationMoveDist)
                 && NextRunNode is { IsVisited: false, Unwalkable: false }
                 && !(NextRunNode.Pos.Distance(playerPos) < _settings.PlayerVisibilityRadius / 2))
             {

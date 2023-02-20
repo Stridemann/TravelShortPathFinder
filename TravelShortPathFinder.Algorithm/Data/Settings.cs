@@ -7,6 +7,7 @@
             float playerVisibilityRadius = 50,
             int segmentationSquareSize = 80,
             float localSelectNearNodeRange = 20,
+            float optimizationMoveDist = 5,
             bool fastSegmentationThroughOnePoint = false)
         {
             SegmentationMinSegmentSize = segmentationMinSegmentSize;
@@ -14,6 +15,7 @@
             SegmentationSquareSize = segmentationSquareSize;
             LocalSelectNearNodeRange = localSelectNearNodeRange;
             FastSegmentationThroughOnePoint = fastSegmentationThroughOnePoint;
+            OptimizationMoveDist = optimizationMoveDist;
         }
 
         /// <summary>
@@ -38,6 +40,11 @@
         /// Nodes in range of "LocalSelectNearNodeRange" will be chosed and from them the nearest node to player will be selected
         /// </summary>
         public float LocalSelectNearNodeRange { get; set; } = 20;
+
+        /// <summary>
+        /// The distance from last algorithm update pos in which the GraphMapExplorer.Update will not trigger algorithm
+        /// </summary>
+        public float OptimizationMoveDist { get;  } = 5;
 
         public bool FastSegmentationThroughOnePoint { get; set; }
     }
