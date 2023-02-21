@@ -64,9 +64,8 @@
         /// <summary>
         /// Start segmentation from specified Point.
         /// </summary>
-        /// <param name="gridPos">This can be player start position converted into grid coord</param>
-        /// <param name="customEndNode">Can be used if we want to specify where we want the player will finish map explore (not strict, but will try to finish in that area).</param>
-        public void ProcessSegmentation(Point gridPos, Node? customEndNode = null)
+        /// <param name="gridPos">This can be player start grid coord</param>
+        public void ProcessSegmentation(Point gridPos)
         {
             _passedNodesCount = 0;
 
@@ -74,15 +73,19 @@
             _playerCachedPos = gridPos;
             NextRunNode = null;
 
-            StartSegmentation(gridPos, customEndNode);
+            StartSegmentation(gridPos);
         }
 
-        public void UpdateForTriggerableBlockage(Point gridCell)
+        /// <summary>
+        /// Can be called when the player teleported to a new non-segmentated area of map
+        /// </summary>
+        /// <param name="gridCell"></param>
+        public void CheckSegmentation(Point gridCell)
         {
-            StartSegmentation(gridCell, null);
+            StartSegmentation(gridCell);
         }
 
-        private void StartSegmentation(Point segmentationStartPoint, Node? customEndNode)
+        private void StartSegmentation(Point segmentationStartPoint)
         {
             _segmentator.Process(segmentationStartPoint, Graph);
             NavGridOptimizer.OptimizeGraph(Graph, _settings.SegmentationMinSegmentSize);
@@ -92,29 +95,25 @@
                 return;
             }
 
-            Node? endNode = customEndNode;
+            Node? endNode = null;
 
-            //User can use own end node where player will finish map explore
-            if (endNode == null)
-            {
-                //Start node from segmentationStartPoint pos is always first.
-                var startPoint = Graph.Nodes[0];
+            //Start node from segmentationStartPoint pos is always first.
+            var startPoint = Graph.Nodes[0];
 
-                //Find the farthest node from start position
-                BreadthFirstSearch.Process(
-                    startPoint,
-                    procNode =>
+            //Find the farthest node from start position
+            BreadthFirstSearch.Process(
+                startPoint,
+                procNode =>
+                {
+                    if (procNode is { Unwalkable: false })
                     {
-                        if (procNode is { Unwalkable: false })
-                        {
-                            endNode = procNode;
+                        endNode = procNode;
 
-                            return true;
-                        }
+                        return true;
+                    }
 
-                        return false;
-                    });
-            }
+                    return false;
+                });
 
             endNode!.PriorityFromEndDistance = 1;
 
@@ -141,7 +140,7 @@
             NextRunNode = null;
             _passedNodesCount += seenNodes.Count;
 
-            GraphPart.DfsIteration++;
+            GraphPart.GraphPartIteration++;
 
             foreach (var seenNode in seenNodes)
             {
@@ -157,9 +156,9 @@
                     }
 
                     //lost connection with a group - making a new group for it
-                    if (node.Group == null || (node.Group.IsGroupProcessed && !node.GraphExplorerProcessed))
+                    if (node.GraphPart == null || (node.GraphPart.IsGroupProcessed && !node.GraphExplorerProcessed))
                     {
-                        var newGroup = new GraphPart(GraphPart.DfsIteration);
+                        var newGroup = new GraphPart(GraphPart.GraphPartIteration);
 
                         BreadthFirstSearch.Process(
                             node,
@@ -168,7 +167,7 @@
                                 if (procNode is { IsVisited: false, Unwalkable: false, GraphExplorerProcessed: false })
                                 {
                                     //LogMessage($"New node: {procNode.Id} for new group: {newGroup.GroupId}");
-                                    procNode.Group = newGroup;
+                                    procNode.GraphPart = newGroup;
                                     procNode.SetGraphExplorerProcessed();
                                     newGroup.Nodes.Add(procNode);
 
@@ -181,12 +180,12 @@
                         newGroup.AveragePos = node.Pos;
 
                         node.SetGraphExplorerProcessed();
-                        node.Group = newGroup;
+                        node.GraphPart = newGroup;
                         _graphParts.Add(newGroup);
                     }
-                    else if (!node.Group.IsGroupProcessed)
+                    else if (!node.GraphPart.IsGroupProcessed)
                     {
-                        var group = node.Group;
+                        var group = node.GraphPart;
 
                         group.Nodes.Clear();
 

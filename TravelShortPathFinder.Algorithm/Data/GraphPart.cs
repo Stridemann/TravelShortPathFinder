@@ -4,9 +4,9 @@
 
     public class GraphPart
     {
-        public static int DfsIteration;
-        public int GraphExplorerIteration = -1;
-        public List<Node> Nodes = new List<Node>();
+        public readonly List<Node> Nodes = new List<Node>();
+        internal static int GraphPartIteration;
+        private int _graphExplorerIteration = -1;
 
         public GraphPart(int id)
         {
@@ -16,11 +16,11 @@
         public int Id { get; }
         public Point AveragePos { get; set; }
         public int NodesCount => Nodes.Count;
-        public bool IsGroupProcessed => GraphExplorerIteration == DfsIteration;
+        internal bool IsGroupProcessed => _graphExplorerIteration == GraphPartIteration;
 
-        public void SetGraphExplorerProcessed()
+        internal void SetGraphExplorerProcessed()
         {
-            GraphExplorerIteration = DfsIteration;
+            _graphExplorerIteration = GraphPartIteration;
         }
     }
 }

@@ -46,6 +46,9 @@
         /// </summary>
         public float OptimizationMoveDist { get;  } = 5;
 
+        /// <summary>
+        /// Processing the points one over another will speed up segmentation twice.
+        /// </summary>
         public bool FastSegmentationThroughOnePoint { get; set; }
     }
 }

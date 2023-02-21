@@ -6,16 +6,14 @@
     [DebuggerDisplay("Node Id:{Id}, IsVisited: {IsVisited}, Links: {Links.Count}")]
     public class Node
     {
-        public readonly Stack<Point> Stack = new Stack<Point>();
+        internal readonly Stack<Point> Stack = new Stack<Point>();
         public readonly Point Pos;
-        public readonly Stack<Point> PossibleSegments = new Stack<Point>();
-        public readonly List<Node> PossibleLinks = new List<Node>();
+        internal readonly Stack<Point> PossibleSegments = new Stack<Point>();
+        internal readonly List<Node> PossibleLinks = new List<Node>();
         public readonly int Id;
 
         private readonly List<Node> _links = new List<Node>();
-        public static int UniqIdCounter;
-        public Point SegmentMin = new Point(int.MaxValue, int.MaxValue);
-        public Point SegmentMax = new Point(int.MinValue, int.MinValue);
+        internal static int UniqIdCounter;
         public int PriorityFromEndDistance;
         public int Square;
         internal Node? FindPathPreviousNode;
@@ -27,13 +25,7 @@
         }
 
         public IReadOnlyList<Node> Links => _links;
-        public Point BoundingCenter { get; private set; }
         public bool IsRemovedByOptimizer { get; internal set; }
-
-        public void UpdateBoundingCenter()
-        {
-            BoundingCenter = new Point((SegmentMax.X + SegmentMin.X) / 2, (SegmentMax.Y + SegmentMin.Y) / 2);
-        }
 
         public void LinkWith(Node node)
         {
@@ -68,15 +60,15 @@
 
         #region Node
 
-        public GraphPart? Group { get; internal set; }
+        public GraphPart? GraphPart { get; internal set; }
         public bool Unwalkable { get; set; }
         public bool IsVisited { get; internal set; }
         internal int GraphExplorerIteration = -1;
-        internal bool GraphExplorerProcessed => GraphExplorerIteration == GraphPart.DfsIteration;
+        internal bool GraphExplorerProcessed => GraphExplorerIteration == GraphPart.GraphPartIteration;
 
         internal void SetGraphExplorerProcessed()
         {
-            GraphExplorerIteration = GraphPart.DfsIteration;
+            GraphExplorerIteration = GraphPart.GraphPartIteration;
         }
 
         #endregion

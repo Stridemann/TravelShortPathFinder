@@ -186,7 +186,7 @@
                                 if (drawNodesSeparateColor)
                                     seed = node.Id;
                                 else
-                                    seed = node.Group?.Id ?? node.Id;
+                                    seed = node.GraphPart?.Id ?? node.Id;
                                 var rand = new Random(seed);
                                 var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
                                 pData![y * _navGrid.Width + x] = randomColor.ToArgb();
@@ -209,9 +209,9 @@
 
                 var randomColor = Color.Gray;
 
-                if (node.Group != null)
+                if (node.GraphPart != null)
                 {
-                    var rand = new Random(node.Group.Id);
+                    var rand = new Random(node.GraphPart.Id);
                     randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
                 }
 

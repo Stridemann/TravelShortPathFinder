@@ -26,7 +26,7 @@ namespace TravelShortPathFinder.Algorithm.Logic
                                 $"Link to deleting sector {deletingNode.Id} was not present in {deletingNodeLinkedNode.Id}");
                         }
 
-                        //Also we link together all around nodes, since our node was linking all around nodes together
+                        //Also we link together all around nodes linked to this, since our node was linking all around nodes together
                         for (var j = i + 1; j < deletingNode.Links.Count; j++)
                         {
                             var nextLinkedNode = deletingNode.Links[j];

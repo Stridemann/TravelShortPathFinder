@@ -2,6 +2,7 @@
 {
     using System.Drawing;
     using Data;
+    using Utils;
 
     public class NavGridSegmentator
     {
@@ -74,18 +75,12 @@
                     }
 
                     currentNode.PossibleLinks.Clear(); //just clear it to free some memory
-                    currentNode.UpdateBoundingCenter();
                     graph.Nodes.Add(currentNode);
                 }
 
-                var orderedSectors = currentNode.PossibleSegments.OrderBy(x => PointDist(currentNode.Pos, x));
+                var orderedSectors = currentNode.PossibleSegments.OrderBy(x => currentNode.Pos.Distance(x));
                 possibleSectors.AddRange(orderedSectors);
             }
-        }
-
-        private static double PointDist(Point p1, Point p2)
-        {
-            return Math.Sqrt(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2));
         }
 
         private void DoSpread(Node node, Point point, Node?[,] mapSegmentMatrix)
@@ -121,9 +116,6 @@
                         {
                             node.PossibleLinks.Add(linkedSection);
                         }
-
-                        //if (!linkedSection.PossibleLinks.Contains(mapSegment))
-                        //    linkedSection.PossibleLinks.Add(mapSegment);
                     }
                 }
 
@@ -157,26 +149,6 @@
             }
 
             node.Square++;
-
-            if (node.SegmentMin.X > point.X)
-            {
-                node.SegmentMin.X = point.X;
-            }
-
-            if (node.SegmentMin.Y > point.Y)
-            {
-                node.SegmentMin.Y = point.Y;
-            }
-
-            if (node.SegmentMax.X < point.X)
-            {
-                node.SegmentMax.X = point.X;
-            }
-
-            if (node.SegmentMax.Y < point.Y)
-            {
-                node.SegmentMax.Y = point.Y;
-            }
 
             _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Passed;
 
