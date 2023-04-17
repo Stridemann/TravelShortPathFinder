@@ -67,7 +67,7 @@
 
                 if (currentNode.Square > 1)
                 {
-                    _navGrid.WalkArray[currentNode.Pos.X, currentNode.Pos.Y] = WalkableFlag.PossibleSegmentPassed;
+                    _navGrid.WalkArray[currentNode.Pos.X, currentNode.Pos.Y] = WalkableFlag.PossibleSegmentProcessed;
 
                     foreach (var possibleLink in currentNode.PossibleLinks)
                     {
@@ -97,16 +97,16 @@
 
             var value = _navGrid.WalkArray[point.X, point.Y];
 
-            if (value.Contain(WalkableFlag.NonWalkable))
+            if (value.HasMyFlag(WalkableFlag.NonWalkable))
             {
-                _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Passed;
+                _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Processed;
     
                 return;
             }
 
-            if (value.Contain(WalkableFlag.Passed))
+            if (value.HasMyFlag(WalkableFlag.Processed))
             {
-                if (value.Contain(WalkableFlag.PossibleSegmentStart))
+                if (value.HasMyFlag(WalkableFlag.PossibleSegmentStart))
                 {
                     var linkedSection = mapSegmentMatrix[point.X, point.Y];
 
@@ -150,7 +150,7 @@
 
             node.Square++;
 
-            _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Passed;
+            _navGrid.WalkArray[point.X, point.Y] = value | WalkableFlag.Processed;
 
             if (!_settings.FastSegmentationThroughOnePoint)
             {

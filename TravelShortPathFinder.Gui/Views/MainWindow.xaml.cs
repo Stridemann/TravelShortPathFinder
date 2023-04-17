@@ -2,6 +2,8 @@
 
 namespace TravelShortPathFinder.Gui.Views
 {
+	using System.Windows.Media;
+
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
@@ -10,6 +12,7 @@ namespace TravelShortPathFinder.Gui.Views
 		public MainWindow()
 		{
 			InitializeComponent();
+			RenderOptions.SetBitmapScalingMode(Image1, BitmapScalingMode.NearestNeighbor);
 		}
 	}
 }

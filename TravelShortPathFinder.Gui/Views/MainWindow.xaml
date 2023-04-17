@@ -5,6 +5,9 @@
         prism:ViewModelLocator.AutoWireViewModel="True"
         Title="{Binding Title}" Height="1000" Width="Auto" WindowStartupLocation="CenterScreen">
     <Grid>
-        <Image HorizontalAlignment="Left" VerticalAlignment="Top" Source="{Binding BitmapImage}" Stretch="Uniform"/>
+        <Image Name="Image1"
+               HorizontalAlignment="Left" VerticalAlignment="Top" Source="{Binding BitmapImage}"
+               Stretch="Uniform"
+               SnapsToDevicePixels="true" />
     </Grid>
 </Window>

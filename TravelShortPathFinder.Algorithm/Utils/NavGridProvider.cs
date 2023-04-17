@@ -4,6 +4,7 @@ namespace TravelShortPathFinder.Algorithm.Utils
     using System.Drawing;
     using System.Drawing.Imaging;
     using Data;
+    using Logic;
 
     public static class NavGridProvider
     {
@@ -37,6 +38,7 @@ namespace TravelShortPathFinder.Algorithm.Utils
         public static NavGrid CreateGrid(int imageWidth, int imageHeight, Func<Point, bool> isWalkableFunc)
         {
             var walkArray = new WalkableFlag[imageWidth, imageHeight];
+            var navArray = new NavCell[imageWidth, imageHeight];
 
             // Process on multiple threads
             Parallel.For(
@@ -47,10 +49,11 @@ namespace TravelShortPathFinder.Algorithm.Utils
                     for (int x = 0; x < imageWidth; x++)
                     {
                         walkArray[x, y] = isWalkableFunc(new Point(x, y)) ? WalkableFlag.Walkable : WalkableFlag.NonWalkable;
+                        navArray[x, y].Flag = walkArray[x, y];
                     }
                 });
 
-            return new NavGrid(imageWidth, imageHeight, walkArray);
+            return new NavGrid(imageWidth, imageHeight, walkArray, navArray);
         }
     }
 }

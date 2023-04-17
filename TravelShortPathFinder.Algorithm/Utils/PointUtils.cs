@@ -21,5 +21,10 @@ namespace TravelShortPathFinder.Algorithm.Utils
         {
             return new Vector2(point.X, point.Y);
         }
+
+        public static Point Translate(this Point point, int addX, int addY)
+        {
+            return new Point(point.X + addX, point.Y + addY);
+        }
     }
 }

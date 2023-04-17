@@ -57,18 +57,27 @@
 
         private void Explore()
         {
-            var navCase = InputNavCases.Case2;
+            var navCase = InputNavCases.Case1;
             _settings = navCase.Settings;
 
             _imageSessionFolder = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
             Directory.CreateDirectory(_imageSessionFolder);
 
-            Application.Current.Dispatcher.Invoke(
-                () => { BitmapImage = ConvertBitmapToBitmapImage(navCase.Bitmap); });
-            Thread.Sleep(1000);
+            // Application.Current.Dispatcher.Invoke(
+            //     () => { BitmapImage = ConvertBitmapToBitmapImage(navCase.Bitmap); });
+            //Thread.Sleep(1000);
             _navGrid = NavGridProvider.FromBitmap(navCase.Bitmap);
             _explorer = new GraphMapExplorer(_navGrid, _settings);
             _graph = _explorer.Graph;
+
+            #region Test
+
+            var segm = new NavGridSegmentatorV2(_navGrid, _settings);
+            segm.Process(navCase.StartPoint, _graph);
+            
+            RepaintBitmap(null, null, true);
+            return;
+            #endregion
           
             _explorer.ProcessSegmentation(navCase.StartPoint);
             
@@ -136,7 +145,7 @@
             var font = new Font("Arial", 20, FontStyle.Regular);
 
             //Note:
-            //pData![y * _navGrid.Width + x] = blackArgb;
+            //pData[y * _navGrid.Width + x] = blackArgb;
             //is the same as:
             //bitmap.SetPixel(x, y, Color.Black);
             Parallel.For(
@@ -147,8 +156,16 @@
                     var y = i / _navGrid.Width;
                     var x = i % _navGrid.Width;
 
-                    var gridVal = _navGrid.WalkArray[x, y];
+                    var navVal = _navGrid.NavArray[x, y];
+                    var gridVal = navVal.Flag;
 
+                    // if (1 == 1)
+                    // {
+                    //     var rand = new Random(navVal.Id);
+                    //     //var randomColor = Color.FromArgb(navVal.Id % 256, (navVal.Id / 25) % 25, (navVal.Id / 512) % 256);
+                    //     var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+                    //     pData![y * _navGrid.Width + x] = randomColor.ToArgb();
+                    // }else 
                     if ((gridVal & WalkableFlag.NonWalkable) != 0)
                     {
                         pData![y * _navGrid.Width + x] = blackArgb;
@@ -157,7 +174,7 @@
                     {
                         pData![y * _navGrid.Width + x] = redArgb;
                     }
-                    else if (gridVal == WalkableFlag.PossibleSegmentPassed)
+                    else if (gridVal == WalkableFlag.PossibleSegmentProcessed)
                     {
                         pData![y * _navGrid.Width + x] = greenArgb;
                     }
