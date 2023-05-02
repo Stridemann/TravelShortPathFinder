@@ -7,32 +7,26 @@
     using Data;
 
     /// <summary>
+    /// https://gist.github.com/Smurf-IV/45236fc5531535e13b5debbc495c21dc
     /// http://www.imageprocessingplace.com/downloads_V3/root_downloads/tutorials/contour_tracing_Abeer_George_Ghuneim/theo.html
     /// </summary>
     public enum TheoDirection
     {
-        North,
-        East,
-        South,
-        West
+        Up,
+        Right,
+        Down,
+        Left
     }
 
     public static class BoundaryTracing
     {
-        private enum TheoMovement
-        {
-            P1,
-            P2,
-            P3
-        };
-
         private static readonly Dictionary<TheoDirection, TheoDirection> P1TheoDirection =
             new Dictionary<TheoDirection, TheoDirection>
             {
-                { TheoDirection.North, TheoDirection.West },
-                { TheoDirection.West, TheoDirection.South },
-                { TheoDirection.South, TheoDirection.East },
-                { TheoDirection.East, TheoDirection.North }
+                { TheoDirection.Up, TheoDirection.Left },
+                { TheoDirection.Left, TheoDirection.Down },
+                { TheoDirection.Down, TheoDirection.Right },
+                { TheoDirection.Right, TheoDirection.Up }
             };
 
         // <image src=".\images\theodem.GIF"/>
@@ -66,13 +60,13 @@
             int directionOffset = 0;
             int stationaryRotations = 0;
             TheoDirection lastDirection = initialDirection;
-
+            directionOffset = (int)initialDirection * 3 + 1;
+   
             do
             {
-                // <image src=".\images\theopic2.GIF"/>
-                Point p1 = TheoMove[(int)TheoMovement.P1 + directionOffset](p.Value);
+                Point p1 = TheoMove[0 + directionOffset](p.Value);
 
-                if (navGrid.IsWalkable(p1.X, p1.Y))
+                if (navGrid.IsWalkableNonProcessed(p1.X, p1.Y))
                 {
                     p = p1;
                     contour.Add(new Tuple<Point, int>(p1, contour.Count));
@@ -83,25 +77,23 @@
                 }
                 else
                 {
-                    Point p2 = TheoMove[(int)TheoMovement.P2 + directionOffset](p.Value);
+                    Point p2 = TheoMove[1 + directionOffset](p.Value);
 
-                    if (navGrid.IsWalkable(p2.X, p2.Y))
+                    if (navGrid.IsWalkableNonProcessed(p2.X, p2.Y))
                     {
                         contour.Add(new Tuple<Point, int>(p2, contour.Count));
                         navGrid.WalkArray[p2.X, p2.Y] = WalkableFlag.Processed;
-                        // <image src=".\images\theopic3.GIF"/>
                         p = p2;
                         stationaryRotations = 0;
                     }
                     else
                     {
-                        Point p3 = TheoMove[(int)TheoMovement.P3 + directionOffset](p.Value);
+                        Point p3 = TheoMove[2 + directionOffset](p.Value);
 
-                        if (navGrid.IsWalkable(p3.X, p3.Y))
+                        if (navGrid.IsWalkableNonProcessed(p3.X, p3.Y))
                         {
                             contour.Add(new Tuple<Point, int>(p3, contour.Count));
                             navGrid.WalkArray[p3.X, p3.Y] = WalkableFlag.Processed;
-                            // <image src=".\images\theopic4.GIF"/>
                             p = p3;
                             stationaryRotations = 0;
                         }

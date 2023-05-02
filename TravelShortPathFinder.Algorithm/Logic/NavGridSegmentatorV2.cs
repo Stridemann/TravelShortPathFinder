@@ -4,28 +4,6 @@
     using Data;
     using Utils;
 
-    public struct NavCell
-    {
-        public Point Pos;
-        public WalkableFlag Flag;
-        public bool IsWalkableNonProcessed => Flag == WalkableFlag.Walkable;
-        public bool IsProcessed => (Flag & WalkableFlag.Processed) != 0;
-        public int Id;
-        public int IterationId;
-
-        public NavCell(
-            Point pos,
-            WalkableFlag flag,
-            int id,
-            int iterationId)
-        {
-            Pos = pos;
-            Flag = flag;
-            Id = id;
-            IterationId = iterationId;
-        }
-    }
-
     public class NavGridSegmentatorV2
     {
         private readonly NavGrid _navGrid;
@@ -42,24 +20,69 @@
 
         public void Process(Point startPoint, Graph graph)
         {
-            var borderPos = new Point(51, 18);
-            var contour = BoundaryTracing.Trace(_navGrid, borderPos, TheoDirection.North);
+            var iterPos = new Point(51, 18);
             var idCounter = 0;
+            var iterationCounter = 0;
+            var direction = TheoDirection.Up;
+            HashSet<Tuple<Point, int>> contour = null;
 
-            foreach (var point in contour)
+            for (int i = 0; i < 100; i++)
             {
-                _navGrid.NavArray[point.Item1.X, point.Item1.Y] = new NavCell(point.Item1, WalkableFlag.Processed, idCounter++, 0);
-            }
+                iterationCounter++;
+                contour = BoundaryTracing.Trace(_navGrid, iterPos, direction);
 
-            for (int i = 0; i < 10; i++)
-            {
-                contour = Dilate(contour, i);
-            }
+                foreach (var point in contour)
+                {
+                    _navGrid.NavArray[point.Item1.X, point.Item1.Y] = new NavCell(
+                        point.Item1,
+                        WalkableFlag.Processed,
+                        //idCounter++,
+                        iterationCounter);
+                }
 
-            foreach (var point in contour)
-            {
-                _navGrid.NavArray[point.Item1.X, point.Item1.Y].Flag = WalkableFlag.PossibleSegmentProcessed;
-                _navGrid.NavArray[point.Item1.X, point.Item1.Y].Id = point.Item2;
+                var found = false;
+
+                foreach (Tuple<Point, int> point in contour)
+                {
+                    if (_navGrid.NavArray[point.Item1.X, point.Item1.Y + 1].IterationId == iterationCounter) // this and upper pixel is cur contour
+                    {
+                        var navGridWalk1 = _navGrid.WalkArray[point.Item1.X + 1, point.Item1.Y];
+                        var navGridWalk2 = _navGrid.WalkArray[point.Item1.X + 1, point.Item1.Y - 1];
+
+                        if (navGridWalk1 == WalkableFlag.Walkable && navGridWalk2 == WalkableFlag.Walkable)
+                        {
+                            direction = TheoDirection.Up;
+                            iterPos = new Point(point.Item1.X + 1, point.Item1.Y);
+                            found = true;
+
+                            break;
+                        }
+
+                        if (_navGrid.WalkArray[point.Item1.X - 1, point.Item1.Y] == WalkableFlag.Walkable
+                            && _navGrid.WalkArray[point.Item1.X - 1, point.Item1.Y - 1] == WalkableFlag.Walkable)
+                        {
+                            direction = TheoDirection.Down;
+                            iterPos = new Point(point.Item1.X - 1, point.Item1.Y);
+                            found = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                if (!found)
+                {
+                    foreach (var point in contour)
+                    {
+                        _navGrid.NavArray[point.Item1.X, point.Item1.Y] = new NavCell(
+                            point.Item1,
+                            WalkableFlag.PossibleSegmentStart,
+                            //idCounter++,
+                            iterationCounter);
+                    }
+
+                    break;
+                }
             }
         }
 
@@ -116,33 +139,34 @@
                 var left = _navGrid.NavArray[point.X - 1, point.Y];
                 var up = _navGrid.NavArray[point.X, point.Y + 1];
                 var down = _navGrid.NavArray[point.X, point.Y - 1];
-
                 var horisontalCheck = right.IsProcessed && left.IsProcessed;
                 var verticalCheck = up.IsProcessed && down.IsProcessed;
 
-                const int COMPARE_DIST = 0;//15;
+                const int COMPARE_DIST = 0; //15;
 
                 var pointId = dilatedContour.Count;
-                if (horisontalCheck && Math.Abs(right.Id - left.Id) > COMPARE_DIST)
-                {
-                    _navGrid.NavArray[point.X, point.Y] = new NavCell(point, WalkableFlag.PossibleSegmentProcessed, pointId, iterationId + 1);
-                }
-                else if (verticalCheck && Math.Abs(up.Id - down.Id) > COMPARE_DIST)
-                {
-                    _navGrid.NavArray[point.X, point.Y] = new NavCell(point, WalkableFlag.PossibleSegmentProcessed, pointId, iterationId + 1);
-                }
-                else
-                {
-                    _navGrid.NavArray[point.X, point.Y] = new NavCell(point, WalkableFlag.Processed, pointId, iterationId + 1);
-                    dilatedContour.Add(new Tuple<Point, int>(point, pointId));
-                }
+
+                //if (horisontalCheck && Math.Abs(right.Id - left.Id) > COMPARE_DIST)
+                //{
+                //    _navGrid.NavArray[point.X, point.Y] = new NavCell(point, WalkableFlag.PossibleSegmentProcessed, pointId, iterationId + 1);
+                //}
+                //else if (verticalCheck && Math.Abs(up.Id - down.Id) > COMPARE_DIST)
+                //{
+                //    _navGrid.NavArray[point.X, point.Y] = new NavCell(point, WalkableFlag.PossibleSegmentProcessed, pointId, iterationId + 1);
+                //}
+                //else
+                //{
+                //    _navGrid.NavArray[point.X, point.Y] = new NavCell(point, WalkableFlag.Processed, pointId, iterationId + 1);
+                //    dilatedContour.Add(new Tuple<Point, int>(point, pointId));
+                //}
             }
             else if (curCell.IsProcessed
                      && curCell.IterationId == iterationId
                      && fromCell.IterationId == iterationId) //this and prev point is from current contour
             {
-                var idDiff = fromCell.Id - curCell.Id;
+                var idDiff = 0;//fromCell.Id - curCell.Id;
                 const int ID_DIFF_MERGE = 1;
+
                 if (idDiff > ID_DIFF_MERGE)
                 {
                     _navGrid.NavArray[fromCell.Pos.X, fromCell.Pos.Y].Flag = WalkableFlag.PossibleSegmentProcessed;

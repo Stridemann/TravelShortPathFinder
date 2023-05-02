@@ -60,7 +60,7 @@
             var navCase = InputNavCases.Case1;
             _settings = navCase.Settings;
 
-            _imageSessionFolder = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
+            _imageSessionFolder = Path.Combine("OutImg"); //, Path.GetFileNameWithoutExtension(Path.GetTempFileName())
             Directory.CreateDirectory(_imageSessionFolder);
 
             // Application.Current.Dispatcher.Invoke(
@@ -72,15 +72,36 @@
 
             #region Test
 
-            var segm = new NavGridSegmentatorV2(_navGrid, _settings);
-            segm.Process(navCase.StartPoint, _graph);
-            
+            var iterCounter = 1;
+            var radSw = new CustomRadialSweep(_navGrid);
+            var points = radSw.ProcessNext(new Point(51, 28), CustomRadialSweep.Direction.Top, iterCounter++, false)!;
+
+            for (int i = 0; i < 30; i++)
+            {
+                for (int j = 0; j < points.Count; j++)
+                {
+                    var newPoints = radSw.ProcessNext(points[j], CustomRadialSweep.Direction.Top, iterCounter++, true);
+
+                    if (newPoints != null)
+                    {
+                        points = newPoints;
+
+                        break;
+                    }
+                }
+            }
+
+            //var segm = new NavGridSegmentatorV2(_navGrid, _settings);
+            //segm.Process(navCase.StartPoint, _graph);
+
             RepaintBitmap(null, null, true);
+
             return;
+
             #endregion
-          
+
             _explorer.ProcessSegmentation(navCase.StartPoint);
-            
+
             var curPlayerNode = _graph.Nodes.First();
 
             _explorer.Update(curPlayerNode.Pos);
@@ -159,14 +180,15 @@
                     var navVal = _navGrid.NavArray[x, y];
                     var gridVal = navVal.Flag;
 
-                    // if (1 == 1)
-                    // {
-                    //     var rand = new Random(navVal.Id);
-                    //     //var randomColor = Color.FromArgb(navVal.Id % 256, (navVal.Id / 25) % 25, (navVal.Id / 512) % 256);
-                    //     var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
-                    //     pData![y * _navGrid.Width + x] = randomColor.ToArgb();
-                    // }else 
-                    if ((gridVal & WalkableFlag.NonWalkable) != 0)
+                    if (navVal.IterationId > 0)
+                    {
+                        var rand = new Random(navVal.IterationId);
+                        //var alpha = navVal.IterationId * 10 + 50;
+                        //var randomColor = Color.FromArgb(alpha, alpha, alpha);
+                        var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+                        pData![y * _navGrid.Width + x] = randomColor.ToArgb();
+                    }
+                    else if ((gridVal & WalkableFlag.NonWalkable) != 0)
                     {
                         pData![y * _navGrid.Width + x] = blackArgb;
                     }
@@ -219,7 +241,7 @@
             bitmap.UnlockBits(data);
 
             using var g = Graphics.FromImage(bitmap);
-     
+
             foreach (var node in _graph.Nodes)
             {
                 const int CIRCLE_SIZE = 10;
@@ -291,7 +313,7 @@
             }
 
             //Save to folder as animation
-            //bitmap.Save(Path.Combine(_imageSessionFolder, $"Image_{_imageSessionNum++}.png"));
+            bitmap.Save(Path.Combine(_imageSessionFolder, $"Image_{_imageSessionNum++}.png"));
 
             var bImg = ConvertBitmapToBitmapImage(bitmap);
 

@@ -1,6 +1,6 @@
 ﻿namespace TravelShortPathFinder.Algorithm.Data
 {
-    using Logic;
+    using System.Drawing;
 
     public class NavGrid
     {
@@ -21,6 +21,25 @@
             NavArray = navArray;
         }
 
-        public bool IsWalkable(int x, int y) => WalkArray[x, y].HasMyFlag(WalkableFlag.Walkable);
+        public bool IsWalkableNonProcessed(int x, int y) => WalkArray[x, y] == WalkableFlag.Walkable;
+    }
+
+    public struct NavCell
+    {
+        public Point Pos;
+        public WalkableFlag Flag;
+        public bool IsWalkableNonProcessed => Flag == WalkableFlag.Walkable;
+        public bool IsProcessed => (Flag & WalkableFlag.Processed) != 0;
+        public int IterationId;
+
+        public NavCell(
+            Point pos,
+            WalkableFlag flag,
+            int iterationId)
+        {
+            Pos = pos;
+            Flag = flag;
+            IterationId = iterationId;
+        }
     }
 }
