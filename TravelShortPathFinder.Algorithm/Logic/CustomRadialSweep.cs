@@ -5,109 +5,64 @@
 
     public class CustomRadialSweep
     {
-        private static readonly Dictionary<Direction, Point> OffsetFromDirection;
         private readonly NavGrid _navGrid;
-
-        static CustomRadialSweep()
-        {
-            OffsetFromDirection = new Dictionary<Direction, Point>
-            {
-                { Direction.Right, new Point(1, 0) },
-                { Direction.BottomRight, new Point(1, 1) },
-                { Direction.Bottom, new Point(0, 1) },
-                { Direction.BottomLeft, new Point(-1, 1) },
-                { Direction.Left, new Point(-1, 0) },
-                { Direction.TopLeft, new Point(-1, -1) },
-                { Direction.Top, new Point(0, -1) },
-                { Direction.TopRight, new Point(1, -1) }
-            };
-        }
+        public Point CurProcessPoint;
+        private Direction _nextCheckDir;
+        private Direction _moveDir;
+        private Point _initPoint;
 
         public CustomRadialSweep(NavGrid navGrid)
         {
             _navGrid = navGrid;
         }
 
-        public List<Point>? ProcessNext(
-            Point initPoint,
-            Direction moveDir,
-            int iterationId,
-            bool moveInitPoint)
+        public void InitLoop(Point initPoint, Direction moveDir)
         {
-            var point = initPoint;
-            var result = new List<Point>();
+            _initPoint = initPoint;
+            _moveDir = moveDir;
+            CurProcessPoint = initPoint;
+        }
 
-            for (int j = 0; j < 10000; j++)
+        public bool ProcessNext(int iterationId, List<Point> result)
+        {
+            _nextCheckDir = CustomRadialSweepUtils.InverseDir(_moveDir);
+
+            for (int i = 0; i < 8; i++)
             {
-                var invMoveDir = InverseDir(moveDir);
-                var nextCheckDir = invMoveDir;
+                _nextCheckDir = CustomRadialSweepUtils.NextClockwiceDir(_nextCheckDir);
+                var nextOffset = CustomRadialSweepUtils.OffsetFromDirection[_nextCheckDir];
+                var checkPos = new Point(CurProcessPoint.X + nextOffset.X, CurProcessPoint.Y + nextOffset.Y);
+                var arrayVal = _navGrid.NavArray[checkPos.X, checkPos.Y];
 
-                for (int i = 0; i < 8; i++)
+                var overlap = arrayVal.Flag == WalkableFlag.Processed && arrayVal.IterationId == iterationId;
+
+                if (arrayVal.Flag == WalkableFlag.Walkable || overlap)
                 {
-                    nextCheckDir = NextClockwiceDir(nextCheckDir);
-                    var nextOffset = OffsetFromDirection[nextCheckDir];
-                    var checkPos = new Point(point.X + nextOffset.X, point.Y + nextOffset.Y);
-                    var arrayVal = _navGrid.NavArray[checkPos.X, checkPos.Y];
+                    var cell = new NavCell(
+                        checkPos,
+                        WalkableFlag.Processed,
+                        iterationId);
 
-                    if (arrayVal.Flag == WalkableFlag.Walkable || (arrayVal.Flag == WalkableFlag.Processed && arrayVal.IterationId == iterationId))
+                    if (overlap)
+                        cell.ColorId = 1;
+
+                    _navGrid.NavArray[checkPos.X, checkPos.Y] = cell;
+                    _navGrid.WalkArray[checkPos.X, checkPos.Y] = WalkableFlag.Processed;
+                    result.Add(checkPos);
+
+                    if (checkPos == _initPoint)
                     {
-                        _navGrid.NavArray[checkPos.X, checkPos.Y] = new NavCell(
-                            checkPos,
-                            WalkableFlag.Processed,
-                            iterationId);
-                        _navGrid.WalkArray[checkPos.X, checkPos.Y] = WalkableFlag.Processed;
-                        result.Add(checkPos);
-
-                        if (checkPos == initPoint)
-                        {
-                            //done
-                            return result;
-                        }
-
-                        if (moveInitPoint)
-                        {
-                            moveInitPoint = false;
-                            initPoint = checkPos;
-                        }
-
-                        point = checkPos;
-                        moveDir = nextCheckDir;
-
-                        break;
+                        return true;
                     }
+
+                    CurProcessPoint = checkPos;
+                    _moveDir = _nextCheckDir;
+
+                    break;
                 }
             }
 
-            return null;
-        }
-
-        private static Direction NextClockwiceDir(Direction dir)
-        {
-            const int MAX = (int)Direction.Max;
-            var next = ((int)dir + 1) % MAX;
-
-            return (Direction)next;
-        }
-
-        private static Direction InverseDir(Direction dir)
-        {
-            const int MAX = (int)Direction.Max;
-            var next = ((int)dir + 4) % MAX;
-
-            return (Direction)next;
-        }
-
-        public enum Direction
-        {
-            Right,
-            BottomRight,
-            Bottom,
-            BottomLeft,
-            Left,
-            TopLeft,
-            Top,
-            TopRight,
-            Max
+            return false;
         }
     }
 }

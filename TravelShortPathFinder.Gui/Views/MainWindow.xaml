@@ -4,10 +4,15 @@
         xmlns:prism="http://prismlibrary.com/"
         prism:ViewModelLocator.AutoWireViewModel="True"
         Title="{Binding Title}" Height="1000" Width="Auto" WindowStartupLocation="CenterScreen">
-    <Grid>
+    <StackPanel Orientation="Vertical">
+        <StackPanel Orientation="Horizontal">
+            <TextBox Text="{Binding IterationsCount}" Width="100"/>
+            <Button Content="Iterate" Command="{Binding IterateCommand}"/>
+            <Button Content="Step" Command="{Binding StepCommand}"/>
+        </StackPanel>
         <Image Name="Image1"
                HorizontalAlignment="Left" VerticalAlignment="Top" Source="{Binding BitmapImage}"
                Stretch="Uniform"
                SnapsToDevicePixels="true" />
-    </Grid>
+    </StackPanel>
 </Window>

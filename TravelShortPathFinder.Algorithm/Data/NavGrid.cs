@@ -31,6 +31,7 @@
         public bool IsWalkableNonProcessed => Flag == WalkableFlag.Walkable;
         public bool IsProcessed => (Flag & WalkableFlag.Processed) != 0;
         public int IterationId;
+        public int ColorId;
 
         public NavCell(
             Point pos,
@@ -40,6 +41,7 @@
             Pos = pos;
             Flag = flag;
             IterationId = iterationId;
+            ColorId = 0;
         }
     }
 }

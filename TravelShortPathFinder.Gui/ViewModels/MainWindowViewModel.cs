@@ -10,10 +10,12 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows;
+    using System.Windows.Input;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
     using Algorithm.Data;
     using Algorithm.Logic;
+    using Microsoft.Xaml.Behaviors.Core;
     using Prism.Mvvm;
     using TestResources;
     using TravelShortPathFinder.Algorithm.Utils;
@@ -37,9 +39,14 @@
         private Graph _graph;
         private GraphMapExplorer _explorer;
         private Settings _settings;
+        private CustomRadialSweep _radialSweep;
+        private List<Point> _points;
+        private int _iterCounter;
 
         public MainWindowViewModel()
         {
+            IterateCommand = new ActionCommand(DoIteration);
+            StepCommand = new ActionCommand(DoStep);
             Task.Run(Explore);
         }
 
@@ -54,6 +61,10 @@
             get => _bitmapImage;
             set => SetProperty(ref _bitmapImage, value);
         }
+
+        public int IterationsCount { get; set; } = 5;
+        public ICommand IterateCommand { get; }
+        public ICommand StepCommand { get; }
 
         private void Explore()
         {
@@ -70,80 +81,66 @@
             _explorer = new GraphMapExplorer(_navGrid, _settings);
             _graph = _explorer.Graph;
 
-            #region Test
+            _iterCounter = 1;
+            _radialSweep = new CustomRadialSweep(_navGrid);
+            _points = new List<Point>();
 
-            var iterCounter = 1;
-            var radSw = new CustomRadialSweep(_navGrid);
-            var points = radSw.ProcessNext(new Point(51, 28), CustomRadialSweep.Direction.Top, iterCounter++, false)!;
+            _radialSweep.InitLoop(new Point(51, 28), Direction.Top);
 
-            for (int i = 0; i < 30; i++)
+            RepaintBitmap(null, null, true);
+        }
+
+        private void DoIteration()
+        {
+            while (!_radialSweep.ProcessNext(_iterCounter, _points))
             {
-                for (int j = 0; j < points.Count; j++)
+            }
+
+            InitNewCircle();
+            RepaintBitmap(null, null, true);
+        }
+
+        private void DoStep()
+        {
+            if (_radialSweep.ProcessNext(_iterCounter, _points))
+            {
+                InitNewCircle();
+            }
+
+            RepaintBitmap(null, null, true);
+        }
+
+        private void InitNewCircle()
+        {
+            var nextPoint = FindNextProcessPoint(_points);
+            _points.Clear();
+
+            if (nextPoint != null)
+            {
+                _iterCounter++;
+                _radialSweep.InitLoop(nextPoint.Item1, nextPoint.Item2);
+            }
+        }
+
+        private Tuple<Point, Direction> FindNextProcessPoint(List<Point> points)
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                var contourPoint = points[i];
+
+                foreach (var keyValuePair in CustomRadialSweepUtils.OffsetFromDirection)
                 {
-                    var newPoints = radSw.ProcessNext(points[j], CustomRadialSweep.Direction.Top, iterCounter++, true);
+                    var nextOffset = keyValuePair.Value;
+                    var checkPos = new Point(contourPoint.X + nextOffset.X, contourPoint.Y + nextOffset.Y);
 
-                    if (newPoints != null)
+                    if (_navGrid.WalkArray[checkPos.X, checkPos.Y] == WalkableFlag.Walkable)
                     {
-                        points = newPoints;
-
-                        break;
+                        return new Tuple<Point, Direction>(checkPos, keyValuePair.Key);
                     }
                 }
             }
 
-            //var segm = new NavGridSegmentatorV2(_navGrid, _settings);
-            //segm.Process(navCase.StartPoint, _graph);
-
-            RepaintBitmap(null, null, true);
-
-            return;
-
-            #endregion
-
-            _explorer.ProcessSegmentation(navCase.StartPoint);
-
-            var curPlayerNode = _graph.Nodes.First();
-
-            _explorer.Update(curPlayerNode.Pos);
-            RepaintBitmap(null, null, true);
-
-            Thread.Sleep(2000);
-
-            if (!_explorer.HasLocation)
-                return;
-
-            const int DELAY = 150;
-
-            do
-            {
-                _explorer.Update(curPlayerNode.Pos);
-
-                if (!_explorer.HasLocation)
-                {
-                    RepaintBitmap(null, curPlayerNode, false);
-
-                    break;
-                }
-
-                var path = GraphPathFinder.FindPath(curPlayerNode, _explorer.NextRunNode);
-
-                if (path == null)
-                {
-                    //For some reason cannot find path there
-                    //Shouldn't happen
-                    _explorer.NextRunNode.Unwalkable = true;
-                }
-                else if (path.Count == 0)
-                {
-                }
-                else
-                {
-                    curPlayerNode = path[0];
-                }
-
-                Thread.Sleep(DELAY);
-                RepaintBitmap(path, curPlayerNode, false);
-            } while (_explorer.HasLocation);
+            return null;
         }
 
         private unsafe void RepaintBitmap(List<Node> navPath, Node playerNode, bool drawNodesSeparateColor)
@@ -182,11 +179,18 @@
 
                     if (navVal.IterationId > 0)
                     {
-                        var rand = new Random(navVal.IterationId);
-                        //var alpha = navVal.IterationId * 10 + 50;
-                        //var randomColor = Color.FromArgb(alpha, alpha, alpha);
-                        var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
-                        pData![y * _navGrid.Width + x] = randomColor.ToArgb();
+                        if (navVal.ColorId == 1)
+                        {
+                            pData![y * _navGrid.Width + x] = blackArgb; 
+                        }
+                        else
+                        {
+                            var rand = new Random(navVal.IterationId);
+                            //var alpha = navVal.IterationId * 10 + 50;
+                            //var randomColor = Color.FromArgb(alpha, alpha, alpha);
+                            var randomColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+                            pData![y * _navGrid.Width + x] = randomColor.ToArgb(); 
+                        }
                     }
                     else if ((gridVal & WalkableFlag.NonWalkable) != 0)
                     {
@@ -237,6 +241,8 @@
                         }
                     }
                 });
+            pData![_radialSweep.CurProcessPoint.Y * _navGrid.Width + _radialSweep.CurProcessPoint.X] = orangeRedArgb;
+            
 
             bitmap.UnlockBits(data);
 
