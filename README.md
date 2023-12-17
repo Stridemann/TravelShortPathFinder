@@ -1,6 +1,6 @@
 # TravelShortPathFinder
 
-Attempt to solve Traveling Salesman problem in polilinear time + nav grid segmentation (convert to graph)
+New approach for solving Traveling Salesman problem in polilinear time + nav grid segmentation (convert to graph)
 
 Wiki [full documentation](https://github.com/Stridemann/TravelShortPathFinder/wiki/TravelShortPathFinder-algorithm-documentation)
 
